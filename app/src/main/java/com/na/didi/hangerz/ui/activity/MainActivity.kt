@@ -1,9 +1,8 @@
-package com.na.didi.hangerz
+package com.na.didi.hangerz.ui.activity
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
+import com.na.didi.hangerz.R
 
 class MainActivity : AppCompatActivity() {
 

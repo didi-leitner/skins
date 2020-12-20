@@ -1,4 +1,4 @@
-package com.na.didi.hangerz.ui.main
+package com.na.didi.hangerz.ui.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -13,7 +13,6 @@ import com.na.didi.hangerz.R
  */
 class PlaceholderFragment : Fragment() {
 
-    private lateinit var pageViewModel: PageViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,3 +55,4 @@ class PlaceholderFragment : Fragment() {
         }
     }
 }
+

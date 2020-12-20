@@ -6,15 +6,15 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import com.na.didi.hangerz.databinding.FragmentMyPicsBinding
-import com.na.didi.hangerz.ui.main.PlaceholderFragment
+import com.na.didi.hangerz.databinding.FragmentUploadsBinding
+import com.na.didi.hangerz.ui.adapters.UploadsAdapter
 import com.na.didi.hangerz.viewmodel.UploadsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class UploadsFragment : Fragment() {
 
-    private lateinit var binding: FragmentMyPicsBinding
+    private lateinit var binding: FragmentUploadsBinding
     private val viewModel: UploadsViewModel by viewModels()
 
 
@@ -22,11 +22,12 @@ class UploadsFragment : Fragment() {
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View? {
-        val binding = FragmentMyPicsBinding.inflate(inflater, container, false)
+        val binding = FragmentUploadsBinding.inflate(inflater, container, false)
 
-        //val adapter = GardenPlantingAdapter()
-        //binding.gardenList.adapter = adapter
-        //subscribeUi(adapter, binding)
+        val adapter = UploadsAdapter()
+        binding.uploadsList.adapter = adapter
+        subscribeUi(adapter, binding)
+
 
         /*pageViewModel.text.observe(this, Observer<String> {
             textView.text = it
@@ -34,12 +35,12 @@ class UploadsFragment : Fragment() {
         return binding.root
     }
 
-    /*private fun subscribeUi(adapter: GardenPlantingAdapter, binding: FragmentMyPicsBinding) {
-        viewModel.plantAndGardenPlantings.observe(viewLifecycleOwner) { result ->
-            binding.hasPlantings = !result.isNullOrEmpty()
+    private fun subscribeUi(adapter: UploadsAdapter, binding: FragmentUploadsBinding) {
+        /*viewModel.picsList.observe(viewLifecycleOwner) { result ->
+            //binding.hasPlantings = !result.isNullOrEmpty()
             adapter.submitList(result)
-        }
-    }*/
+        }*/
+    }
 
     companion object {
         /**
@@ -52,13 +53,13 @@ class UploadsFragment : Fragment() {
          * Returns a new instance of this fragment for the given section
          * number.
          */
-        @JvmStatic
+        /*@JvmStatic
         fun newInstance(sectionNumber: Int): PlaceholderFragment {
             return PlaceholderFragment().apply {
                 arguments = Bundle().apply {
                     putInt(ARG_SECTION_NUMBER, sectionNumber)
                 }
             }
-        }
+        }*/
     }
 }

@@ -5,8 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.navigation.findNavController
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import com.na.didi.hangerz.R
 import com.na.didi.hangerz.databinding.FragmentViewPagerBinding
@@ -18,9 +18,9 @@ import com.na.didi.hangerz.ui.adapters.WARDROBE_PAGE_INDEX
 class HomeViewPagerFragment : Fragment() {
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
     ): View? {
         val binding = FragmentViewPagerBinding.inflate(inflater, container, false)
         val tabLayout = binding.tabs
@@ -29,8 +29,7 @@ class HomeViewPagerFragment : Fragment() {
         val fab: FloatingActionButton = binding.fab
 
         fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
+            view.findNavController().navigate(R.id.action_home_view_pager_fragment_to_camera_fragment)
         }
 
 
