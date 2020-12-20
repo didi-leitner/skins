@@ -6,40 +6,45 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import com.na.didi.hangerz.databinding.FragmentUploadsBinding
 import com.na.didi.hangerz.ui.adapters.UploadsAdapter
 import com.na.didi.hangerz.viewmodel.UploadsViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class UploadsFragment : Fragment() {
 
-    private lateinit var binding: FragmentUploadsBinding
+    //private lateinit var binding: FragmentUploadsBinding
     private val viewModel: UploadsViewModel by viewModels()
+    private var searchJob: Job? = null
 
 
     override fun onCreateView(
-            inflater: LayoutInflater, container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View? {
         val binding = FragmentUploadsBinding.inflate(inflater, container, false)
 
         val adapter = UploadsAdapter()
         binding.uploadsList.adapter = adapter
-        subscribeUi(adapter, binding)
+        subscribeUi(adapter)
 
 
-        /*pageViewModel.text.observe(this, Observer<String> {
-            textView.text = it
-        })*/
         return binding.root
     }
 
-    private fun subscribeUi(adapter: UploadsAdapter, binding: FragmentUploadsBinding) {
-        /*viewModel.picsList.observe(viewLifecycleOwner) { result ->
-            //binding.hasPlantings = !result.isNullOrEmpty()
-            adapter.submitList(result)
-        }*/
+    private fun subscribeUi(adapter: UploadsAdapter) {
+        searchJob?.cancel()
+        searchJob = lifecycleScope.launch {
+            viewModel.uploads.collectLatest {
+                adapter.submitData(it)
+            }
+        }
+
     }
 
     companion object {

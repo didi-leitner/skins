@@ -1,9 +1,11 @@
 package com.na.didi.hangerz.db
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.na.didi.hangerz.db.dao.UploadsDao
 import com.na.didi.hangerz.model.UploadsModel
 
@@ -27,15 +29,16 @@ abstract class AppDatabase : RoomDatabase() {
         // https://medium.com/google-developers/7-pro-tips-for-room-fbadea4bfbd1#4785
         private fun buildDatabase(context: Context): AppDatabase {
             return Room.databaseBuilder(context, AppDatabase::class.java, "hangerz_database")
-                    /*.addCallback(
+                    .addCallback(
                             object : RoomDatabase.Callback() {
                                 override fun onCreate(db: SupportSQLiteDatabase) {
                                     super.onCreate(db)
-                                    val request = OneTimeWorkRequestBuilder<SeedDatabaseWorker>().build()
-                                    WorkManager.getInstance(context).enqueue(request)
+                                    Log.v("TAGGG","calbback room " + db.version)
+                                    //val request = OneTimeWorkRequestBuilder<SeedDatabaseWorker>().build()
+                                    //WorkManager.getInstance(context).enqueue(request)
                                 }
                             }
-                    )*/
+                    )
                     .build()
         }
     }

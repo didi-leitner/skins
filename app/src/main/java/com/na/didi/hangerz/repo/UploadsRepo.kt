@@ -7,17 +7,16 @@ import com.na.didi.hangerz.db.dao.UploadsDao
 import com.na.didi.hangerz.model.UploadsModel
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class UploadsRepo @Inject constructor(private val uploadsDao: UploadsDao) {
-
 
     fun getUploads(): Flow<PagingData<UploadsModel>> {
         return Pager(
             config = PagingConfig(enablePlaceholders = false, pageSize = DB_PAGE_SIZE),
             pagingSourceFactory = { uploadsDao.getUploadsPaged() }
         ).flow
-
-
     }
 
     companion object {

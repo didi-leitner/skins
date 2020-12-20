@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 data class UploadsModel(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
-    val id: String,
+    val id: Int,
 
     @ColumnInfo(name = "local_url")
     val localImageUrl: String,

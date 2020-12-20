@@ -11,6 +11,4 @@ interface UploadsDao {
     @Query("SELECT * FROM uploads_table")
     fun getUploadsPaged(): PagingSource<Int, UploadsModel>
 
-
-
 }

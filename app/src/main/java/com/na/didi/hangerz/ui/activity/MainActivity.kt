@@ -3,7 +3,9 @@ package com.na.didi.hangerz.ui.activity
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.na.didi.hangerz.R
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

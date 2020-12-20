@@ -1,5 +1,7 @@
 package com.na.didi.hangerz.ui.adapters
 
+import android.content.Intent
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
@@ -24,23 +26,21 @@ class UploadsAdapter : PagingDataAdapter<UploadsModel, UploadsAdapter.UploadsVie
         )
     }
 
-    class UploadsViewHolder(
-        private val binding: ListItemUploadBinding
-    ) : RecyclerView.ViewHolder(binding.root) {
+    class UploadsViewHolder(private val binding: ListItemUploadBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
-            /*binding.setClickListener { view ->
-                binding.photo?.let { photo ->
-                    val uri = Uri.parse(photo.user.attributionUrl)
+            binding.setClickListener { view ->
+                binding.upload?.let { upload ->
+                    val uri = Uri.parse(upload.localImageUrl)
                     val intent = Intent(Intent.ACTION_VIEW, uri)
                     view.context.startActivity(intent)
                 }
-            }*/
+            }
         }
 
         fun bind(item: UploadsModel) {
             binding.apply {
-                //upload = item
-                //executePendingBindings()
+                upload = item
+                executePendingBindings()
             }
         }
     }
