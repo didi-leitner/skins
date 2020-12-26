@@ -1,45 +1,47 @@
 package com.na.didi.hangerz.ui.adapters
 
-import android.content.Intent
-import android.net.Uri
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.na.didi.hangerz.databinding.ListItemUploadBinding
 import com.na.didi.hangerz.model.UploadsModel
+import com.na.didi.hangerz.ui.util.Event
+import com.na.didi.hangerz.ui.viewintent.UploadsViewIntent
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
-class UploadsAdapter : PagingDataAdapter<UploadsModel, UploadsAdapter.UploadsViewHolder>(UploadsDiffCallback()) {
+@ExperimentalCoroutinesApi
+class UploadsAdapter(uploadsIntent: UploadsViewIntent) : PagingDataAdapter<UploadsModel,
+        UploadsAdapter.UploadsViewHolder>(UploadsDiffCallback()) {
+
+    val intent: UploadsViewIntent = uploadsIntent
+
 
     override fun onBindViewHolder(holder: UploadsViewHolder, position: Int) {
         val upload = getItem(position)
         if (upload != null) {
-            holder.bind(upload)
+            holder.bind(upload, position)
         }
 
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UploadsViewHolder {
         return UploadsViewHolder(
-            ListItemUploadBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                ListItemUploadBinding.inflate(LayoutInflater.from(parent.context), parent, false), intent
         )
     }
 
-    class UploadsViewHolder(private val binding: ListItemUploadBinding) : RecyclerView.ViewHolder(binding.root) {
-        init {
-            binding.setClickListener { view ->
-                binding.upload?.let { upload ->
-                    val uri = Uri.parse(upload.localImageUrl)
-                    val intent = Intent(Intent.ACTION_VIEW, uri)
-                    view.context.startActivity(intent)
-                }
-            }
-        }
+    class UploadsViewHolder(private val binding: ListItemUploadBinding, private val intent: UploadsViewIntent)
+        : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(item: UploadsModel) {
+        fun bind(item: UploadsModel, position: Int) {
             binding.apply {
                 upload = item
+                clickListener = View.OnClickListener { view ->
+                    intent.selectContent.value = Event(UploadsViewIntent.SelectContent(item, position))
+                }
                 executePendingBindings()
             }
         }

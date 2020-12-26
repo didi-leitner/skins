@@ -6,19 +6,24 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import com.na.didi.hangerz.databinding.FragmentUploadsBinding
 import com.na.didi.hangerz.ui.adapters.UploadsAdapter
-import com.na.didi.hangerz.viewmodel.UploadsViewModel
+import com.na.didi.hangerz.ui.viewcontract.UploadsViewContract
+import com.na.didi.hangerz.ui.viewintent.UploadsViewIntent
+import com.na.didi.hangerz.ui.viewmodel.UploadsViewModel
+import com.na.didi.hangerz.ui.viewstate.UploadsViewState
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 
 @AndroidEntryPoint
-class UploadsFragment : Fragment() {
+class UploadsFragment : Fragment(), UploadsViewContract {
 
-    //private lateinit var binding: FragmentUploadsBinding
+    private lateinit var binding: FragmentUploadsBinding
+    private lateinit var adapter: UploadsAdapter
+    private val intent = UploadsViewIntent()
     private val viewModel: UploadsViewModel by viewModels()
     private var searchJob: Job? = null
 
@@ -26,24 +31,37 @@ class UploadsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val binding = FragmentUploadsBinding.inflate(inflater, container, false)
 
-        val adapter = UploadsAdapter()
+        adapter = UploadsAdapter(intent)
         binding.uploadsList.adapter = adapter
-        subscribeUi(adapter)
+
+
+
+        //subscribeUi(adapter)
 
 
         return binding.root
     }
 
+    @ExperimentalCoroutinesApi
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        viewModel.bindIntents(this)
+        //if (savedInstanceState == null)
+            //intent.loadFromNetwork.value = true
+
+    }
+
     private fun subscribeUi(adapter: UploadsAdapter) {
-        searchJob?.cancel()
+        /*searchJob?.cancel()
         searchJob = lifecycleScope.launch {
             viewModel.uploads.collectLatest {
                 adapter.submitData(it)
             }
-        }
+        }*/
 
     }
 
@@ -66,5 +84,28 @@ class UploadsFragment : Fragment() {
                 }
             }
         }*/
+    }
+
+
+
+
+    override fun initState() = MutableStateFlow(true)
+
+    override fun loadFromNetwork() = intent.loadFromNetwork.filterNotNull()
+
+    override fun selectContent() = intent.selectContent.filterNotNull()
+
+
+    override fun render(state: UploadsViewState) {
+        when(state) {
+            is UploadsViewState.Loading -> {}
+            is UploadsViewState.UploadsList -> {
+                state.pagingData?.let { adapter.submitData(lifecycle, it) }
+            }
+            is UploadsViewState.OpenContent -> {
+                //TODO navigation event
+            }
+
+        }
     }
 }
