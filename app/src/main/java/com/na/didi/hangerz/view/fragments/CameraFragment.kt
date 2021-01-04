@@ -20,17 +20,22 @@ import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import com.na.didi.hangerz.data.model.UploadsModel
 import com.na.didi.hangerz.databinding.FragmentCameraBinding
 import com.na.didi.hangerz.sep_module.LuminosityAnalyzer
+import com.na.didi.hangerz.viewmodel.CameraViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-
+@AndroidEntryPoint
 class CameraFragment : Fragment() {
 
+    private val viewModel : CameraViewModel by viewModels()
     private var imageCapture: ImageCapture? = null
 
     private lateinit var cameraExecutor: ExecutorService
@@ -74,9 +79,9 @@ class CameraFragment : Fragment() {
         // Get a stable reference of the modifiable image capture use case
         imageCapture?.let { imageCapture ->
 
-            val fileName = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(System.currentTimeMillis())
+            val taken = System.currentTimeMillis()
+            val fileName = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(taken)
             val outputOptions: ImageCapture.OutputFileOptions
-
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
 
@@ -85,8 +90,6 @@ class CameraFragment : Fragment() {
                 val contentValues = ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
                     put(MediaStore.Images.Media.RELATIVE_PATH, outputDirectoryName)
-                    //java.lang.SecurityException: Permission Denial: writing com.android.providers.media.MediaProvider uri content://media/external/images/media from pid=29517, uid=10149 requires android.permission.WRITE_EXTERNAL_STORAGE, or grantUriPermission()
-                    //put(MediaStore.Images.Media.DATA, outputDirectoryName) //pt <29 ?????
                     put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
                 }
 
@@ -111,8 +114,8 @@ class CameraFragment : Fragment() {
             }
 
 
-            imageCapture.takePicture(
-                    outputOptions, cameraExecutor, object : ImageCapture.OnImageSavedCallback {
+            imageCapture.takePicture(outputOptions, cameraExecutor, object : ImageCapture.OnImageSavedCallback {
+
                 override fun onError(exc: ImageCaptureException) {
                     Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
                 }
@@ -122,12 +125,13 @@ class CameraFragment : Fragment() {
 
                     Log.d(TAG, "Photo capture succeeded: $savedUri")
 
+                    val upload = UploadsModel(0, savedUri.toString(), taken, "9")
+                    viewModel.addPicToDB(upload)
 
                     // Implicit broadcasts will be ignored for devices running API level >= 24
                     // so if you only target API level 24+ you can remove this statement
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                        requireActivity().sendBroadcast(Intent(Camera.ACTION_NEW_PICTURE, savedUri)
-                        )
+                        requireActivity().sendBroadcast(Intent(Camera.ACTION_NEW_PICTURE, savedUri))
                     }
 
                     requireActivity().supportFragmentManager.popBackStack()

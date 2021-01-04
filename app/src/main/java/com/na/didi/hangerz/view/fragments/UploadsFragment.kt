@@ -1,6 +1,7 @@
 package com.na.didi.hangerz.view.fragments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -48,6 +49,7 @@ class UploadsFragment : Fragment(), UploadsViewContract {
     @ExperimentalCoroutinesApi
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
 
         viewModel.bindIntents(this)
         //if (savedInstanceState == null)
@@ -100,7 +102,17 @@ class UploadsFragment : Fragment(), UploadsViewContract {
         when(state) {
             is UploadsViewState.Loading -> {}
             is UploadsViewState.UploadsList -> {
-                state.pagingData?.let { adapter.submitData(lifecycle, it) }
+
+
+
+                state.pagingData?.let {
+                    Log.v("TAGGG","size1: " + adapter.itemCount)
+
+                    adapter.submitData(lifecycle, it)
+
+                    Log.v("TAGGG","size2: " + adapter.itemCount)
+
+                }
             }
             is UploadsViewState.OpenContent -> {
                 //TODO navigation event

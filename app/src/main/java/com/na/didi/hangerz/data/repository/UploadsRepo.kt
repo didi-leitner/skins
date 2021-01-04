@@ -19,6 +19,10 @@ class UploadsRepo @Inject constructor(private val uploadsDao: UploadsDao) {
         ).flow
     }
 
+    fun insertUpload(upload : UploadsModel) {
+        uploadsDao.addUpload(upload)
+    }
+
     companion object {
         private const val DB_PAGE_SIZE = 10
     }

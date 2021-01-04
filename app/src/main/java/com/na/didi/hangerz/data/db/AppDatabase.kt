@@ -10,7 +10,7 @@ import com.na.didi.hangerz.data.db.dao.UploadsDao
 import com.na.didi.hangerz.data.model.UploadsModel
 
 
-@Database(entities = [UploadsModel::class], version = 1, exportSchema = false)
+@Database(entities = [UploadsModel::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun uploadsDao(): UploadsDao
 
@@ -39,6 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
                                 }
                             }
                     )
+                    .fallbackToDestructiveMigration()//TODO
                     .build()
         }
     }
