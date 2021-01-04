@@ -6,7 +6,7 @@
 
     <fragment
         android:id="@+id/homeViewPagerFragment"
-        android:name="com.na.didi.hangerz.ui.fragments.HomeViewPagerFragment"
+        android:name="com.na.didi.hangerz.view.fragments.HomeViewPagerFragment"
         android:label="HomeViewPagerFragment">
 
         <action
@@ -21,7 +21,7 @@
 
     <fragment
         android:id="@+id/cameraFragment"
-        android:name="com.na.didi.hangerz.ui.fragments.CameraFragment"
+        android:name="com.na.didi.hangerz.view.fragments.CameraFragment"
         android:label="CameraFragment" />
 
 

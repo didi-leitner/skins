@@ -9,7 +9,7 @@
             type="android.view.View.OnClickListener"/>
         <variable
             name="upload"
-            type="com.na.didi.hangerz.model.UploadsModel"/>
+            type="com.na.didi.hangerz.data.model.UploadsModel"/>
     </data>
 
     <com.google.android.material.card.MaterialCardView

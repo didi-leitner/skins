@@ -1,8 +1,8 @@
 package com.na.didi.hangerz.di
 
 import android.content.Context
-import com.na.didi.hangerz.db.AppDatabase
-import com.na.didi.hangerz.db.dao.UploadsDao
+import com.na.didi.hangerz.data.db.AppDatabase
+import com.na.didi.hangerz.data.db.dao.UploadsDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
