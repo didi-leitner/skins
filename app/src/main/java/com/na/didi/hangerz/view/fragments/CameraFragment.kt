@@ -2,7 +2,9 @@ package com.na.didi.hangerz.view.fragments
 
 import android.Manifest
 import android.content.ContentValues
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.hardware.Camera
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -32,7 +34,6 @@ class CameraFragment : Fragment() {
     private var imageCapture: ImageCapture? = null
 
     private lateinit var cameraExecutor: ExecutorService
-
     private lateinit var viewFinder: PreviewView
 
     override fun onCreateView(
@@ -49,7 +50,8 @@ class CameraFragment : Fragment() {
         }
 
         // Set up the listener for take photo button
-        binding.cameraCaptureButton.setOnClickListener { takePhoto() }
+        binding.cameraCaptureButton.setOnClickListener { captureImage() }
+
 
         viewFinder = binding.viewFinder
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -66,64 +68,77 @@ class CameraFragment : Fragment() {
         cameraExecutor.shutdown()
     }
 
-    private fun takePhoto() {
 
-        val imageCapture = imageCapture ?: return
+    private fun captureImage() {
 
-        val outputOptions : ImageCapture.OutputFileOptions
-        val fileName = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(System.currentTimeMillis())
-        val outputDirectoryName = Environment.DIRECTORY_PICTURES + File.separator + "hangerz"
+        // Get a stable reference of the modifiable image capture use case
+        imageCapture?.let { imageCapture ->
+
+            val fileName = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(System.currentTimeMillis())
+            val outputOptions: ImageCapture.OutputFileOptions
 
 
-        Log.v("TAGGG",outputDirectoryName + " and " + fileName)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val outputDirectoryName = Environment.DIRECTORY_PICTURES + File.separator + "hangerz"
 
-            val contentValues = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                put(MediaStore.Images.Media.RELATIVE_PATH, outputDirectoryName)
-                //put(MediaStore.Images.Media.DATA, photoFile.absolutePath) pt <29 ?????
-                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Images.Media.RELATIVE_PATH, outputDirectoryName)
+                    //java.lang.SecurityException: Permission Denial: writing com.android.providers.media.MediaProvider uri content://media/external/images/media from pid=29517, uid=10149 requires android.permission.WRITE_EXTERNAL_STORAGE, or grantUriPermission()
+                    //put(MediaStore.Images.Media.DATA, outputDirectoryName) //pt <29 ?????
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                }
+
+                outputOptions = ImageCapture.OutputFileOptions
+                        .Builder(requireContext().contentResolver, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                        .build()
+
+            } else {
+
+                //TODO check this - when should we save to the media app?
+                //this  is an app-private folder.
+                ///storage/emulated/0/Android/media/com.na.didi.hangerz/hangerz/2021-01-04-21-01-06-715.jpg api 23
+                //storage/emulated/0/Pictures/hangerz/2021-01-04-21-31-27-071.jpg: open failed: EACCES (Permission denied)
+
+                val outputDirectory = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "hangerz").apply {
+                    if (!exists())
+                        mkdirs()
+                }
+                val photoFile = File(outputDirectory, fileName + ".jpg")
+                outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+
             }
 
-            outputOptions = ImageCapture.OutputFileOptions
-                    .Builder(requireContext().contentResolver, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-                    .build()
 
-        } else {
+            imageCapture.takePicture(
+                    outputOptions, cameraExecutor, object : ImageCapture.OnImageSavedCallback {
+                override fun onError(exc: ImageCaptureException) {
+                    Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
+                }
 
-            //may need permission for files
-            File(outputDirectoryName).apply {
-                if(!exists())
-                    mkdirs()
-            }
-            //TODO check
-            val photoFile = File(outputDirectoryName, fileName + ".jpg")
-            outputOptions = ImageCapture.OutputFileOptions
-                    .Builder(photoFile).build()
+                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                    val savedUri = output.savedUri //?: Uri.fromFile(photoFile)
 
-            //scan etc
+                    Log.d(TAG, "Photo capture succeeded: $savedUri")
+
+
+                    // Implicit broadcasts will be ignored for devices running API level >= 24
+                    // so if you only target API level 24+ you can remove this statement
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                        requireActivity().sendBroadcast(Intent(Camera.ACTION_NEW_PICTURE, savedUri)
+                        )
+                    }
+
+                    requireActivity().supportFragmentManager.popBackStack()
+
+                }
+            })
+
         }
 
-
-        imageCapture.takePicture(outputOptions,
-                ContextCompat.getMainExecutor(requireContext()), object : ImageCapture.OnImageSavedCallback {
-
-            override fun onError(exc: ImageCaptureException) {
-                Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
-            }
-
-            override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                val savedUri = output.savedUri//Uri.fromFile(output.)
-
-                //TODO analyze image
-
-                val msg = "Photo capture succeeded: $savedUri"
-                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
-                Log.d(TAG, msg)
-            }
-        })
     }
+
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
@@ -144,7 +159,7 @@ class CameraFragment : Fragment() {
                     .build()
                     .also {
                         it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luma ->
-                            Log.d(TAG, "Average luminosity: $luma")
+                            //Log.d(TAG, "Average luminosity: $luma")
                         })
                     }
 
@@ -172,7 +187,6 @@ class CameraFragment : Fragment() {
     }
 
 
-
     override fun onRequestPermissionsResult(
             requestCode: Int, permissions: Array<String>, grantResults:
             IntArray) {
@@ -192,10 +206,25 @@ class CameraFragment : Fragment() {
 
     companion object {
         private const val TAG = "CameraXBasic"
+        private const val FILENAME = "yyyy-MM-dd-HH-mm-ss-SSS"
+        private const val PHOTO_EXTENSION = ".jpg"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val REQUEST_CODE_PERMISSIONS = 10
-        //TODO use elvis op f ext.storage
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+
+        private val REQUIRED_PERMISSIONS = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) arrayOf(Manifest.permission.CAMERA)
+        else arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+
+        /*
+        private fun getOutputDirectory(context: Context): File {
+            val appContext = context.applicationContext
+
+            val mediaDir = context.externalMediaDirs.firstOrNull()?.let {
+                File(it, "hangerz").apply { mkdirs() }
+            }
+            return if (mediaDir != null && mediaDir.exists())
+                mediaDir else appContext.filesDir
+        }*/
     }
+
 
 }
