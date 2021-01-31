@@ -6,12 +6,12 @@
 
     <fragment
         android:id="@+id/homeViewPagerFragment"
-        android:name="com.na.didi.hangerz.view.fragments.HomeViewPagerFragment"
+        android:name="com.na.didi.skinz.view.fragments.HomeViewPagerFragment"
         android:label="HomeViewPagerFragment">
 
         <action
-            android:id="@+id/action_home_view_pager_fragment_to_camera_fragment"
-            app:destination="@id/cameraFragment"
+            android:id="@+id/action_home_view_pager_fragment_to_camera_activity"
+            app:destination="@id/cameraActivity"
             app:enterAnim="@anim/slide_in_right"
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
@@ -19,9 +19,9 @@
 
     </fragment>
 
-    <fragment
-        android:id="@+id/cameraFragment"
-        android:name="com.na.didi.hangerz.view.fragments.CameraFragment"
+    <activity
+        android:id="@+id/cameraActivity"
+        android:name="com.na.didi.skinz.view.activity.CameraXLivePreviewActivity"
         android:label="CameraFragment" />
 
 

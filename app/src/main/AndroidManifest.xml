@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.na.didi.hangerz">
+    package="com.na.didi.skinz">
 
     <uses-feature android:name="android.hardware.camera.any"
         android:required="true"
@@ -18,12 +18,12 @@
 
 
     <uses-permission android:name="android.permission.CAMERA" />
-
+    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
     <application
-        android:name=".HangerzApplication"
+        android:name="com.na.didi.skinz.HangerzApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -32,7 +32,7 @@
         android:theme="@style/Theme.Hangerz">
 
         <activity
-            android:name=".view.activity.MainActivity"
+            android:name="com.na.didi.skinz.view.activity.MainActivity"
             android:label="@string/app_name"
             android:theme="@style/Theme.Hangerz.NoActionBar">
             <intent-filter>
@@ -41,6 +41,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.na.didi.skinz.view.activity.CameraXLivePreviewActivity"
+            android:exported="false"
+            android:screenOrientation="portrait">
+        </activity>
+
     </application>
 
 </manifest>
