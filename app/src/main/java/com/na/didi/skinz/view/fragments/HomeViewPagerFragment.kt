@@ -13,7 +13,7 @@ import com.na.didi.skinz.databinding.FragmentViewPagerBinding
 import com.na.didi.skinz.view.adapters.EXPLORE_PAGE_INDEX
 import com.na.didi.skinz.view.adapters.HomeViewPagerAdapter
 import com.na.didi.skinz.view.adapters.MY_PICS_PAGE_INDEX
-import com.na.didi.skinz.view.adapters.WARDROBE_PAGE_INDEX
+import com.na.didi.skinz.view.adapters.MY_PRODUCTS_PAGE_INDEX
 
 class HomeViewPagerFragment : Fragment() {
 
@@ -49,7 +49,7 @@ class HomeViewPagerFragment : Fragment() {
     private fun getTabIcon(position: Int): Int {
         return when (position) {
             MY_PICS_PAGE_INDEX -> R.drawable.ic_tab_my_pics
-            WARDROBE_PAGE_INDEX -> R.drawable.ic_tab_wardrobe
+            MY_PRODUCTS_PAGE_INDEX -> R.drawable.ic_tab_wardrobe
             EXPLORE_PAGE_INDEX -> R.drawable.ic_tab_explore
             else -> throw IndexOutOfBoundsException()
         }

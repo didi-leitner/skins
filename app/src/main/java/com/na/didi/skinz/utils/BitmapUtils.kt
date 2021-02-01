@@ -1,6 +1,7 @@
 package com.na.didi.skinz.utils
 import android.annotation.TargetApi
 import android.content.ContentResolver
+import android.content.Context
 import android.graphics.*
 import android.media.Image.Plane
 import android.net.Uri
@@ -13,12 +14,33 @@ import androidx.camera.core.ImageProxy
 import androidx.exifinterface.media.ExifInterface
 import com.na.didi.skinz.camera.FrameMetadata
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.ByteBuffer
 
 object BitmapUtils {
     private const val TAG = "BitmapUtils"
 
+    fun saveBitmapToAppPrivateStorage(context: Context, bitmap: Bitmap, dirName: String, fileName: String) :Uri {
+
+        val directory: File = context.getDir(dirName, Context.MODE_PRIVATE)
+        if (!directory.exists()) {
+            directory.mkdir()
+        }
+        val mypath = File(directory, fileName+".png")
+
+        var fos: FileOutputStream?
+        try {
+            fos = FileOutputStream(mypath)
+            bitmap?.compress(Bitmap.CompressFormat.PNG, 100, fos)
+            fos.close()
+        } catch (e: Exception) {
+            Log.e("SAVE_IMAGE", e.message, e)
+        }
+
+        return Uri.fromFile(mypath)
+    }
     /** Converts NV21 format byte buffer to bitmap.  */
     fun getBitmap(data: ByteBuffer, metadata: FrameMetadata): Bitmap? {
         data.rewind()

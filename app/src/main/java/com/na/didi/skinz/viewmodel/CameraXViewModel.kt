@@ -1,30 +1,35 @@
 package com.na.didi.skinz.viewmodel
 
+import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.na.didi.skinz.camera.DetectedObjectInfo
-import com.na.didi.skinz.camera.SearchedObject
-import com.na.didi.skinz.data.repository.UploadsRepo
+import com.na.didi.skinz.data.model.Product
+import com.na.didi.skinz.data.repository.ProductsRepo
 import com.na.didi.skinz.util.onEachEvent
+import com.na.didi.skinz.utils.BitmapUtils
 import com.na.didi.skinz.view.viewcontract.CameraXPreviewViewContract
 import com.na.didi.skinz.view.viewstate.CameraViewState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
 
 @ExperimentalCoroutinesApi
 class CameraXViewModel @ViewModelInject internal constructor(
-        uploadsRepo: UploadsRepo
+        productsRepo: ProductsRepo
 ) : ViewModel() {
 
-    private val uploadsRepository: UploadsRepo = uploadsRepo
+    private val productsRepo: ProductsRepo = productsRepo
     private val cameraViewState = MutableStateFlow<CameraViewState>(CameraViewState.Idle())
+
 
     var isCameraLive = false
         private set
-
-    private var confirmedObject: DetectedObjectInfo? = null
 
 
     fun bindViewIntents(viewContract: CameraXPreviewViewContract) {
@@ -34,13 +39,6 @@ class CameraXViewModel @ViewModelInject internal constructor(
             cameraViewState.filterNotNull().collect {
                 Log.v("TAGGG", "collect state, render " + it)
                 viewContract.render(it)
-
-                if (it != CameraViewState.Confirmed()
-                        //it != CameraViewState.Searching()
-                       // it != CameraViewState.Searched()
-                ) {
-                    confirmedObject = null
-                }
             }
             Log.v("TAGGG", "onEach, after collect call")
 
@@ -50,53 +48,64 @@ class CameraXViewModel @ViewModelInject internal constructor(
             cameraViewState.value = CameraViewState.Detecting()
         }.launchIn(viewModelScope)
 
+        viewContract.onProductConfirmedWithClick().onEach {
+
+            Log.v("ESTE", "Product: " + it.title + " " + it.subtitle)
+            //hide bottom sheet
+            //add product to myProducts - title/subtitle/imagepath
+            //search for ingredients
+
+            //save bitmap
+            cameraViewState.value = CameraViewState.SearchedProductConfirmed(it)
+
+
+        }.launchIn(viewModelScope)
+
 
         //TODO sep cameraContract?
+        viewContract.onNothingFoundInFrame().onEachEvent {
+            cameraViewState.value = CameraViewState.Detecting()
+        }.launchIn(viewModelScope)
 
         viewContract.onMovedAwayFromDetectedObject().onEachEvent {
             cameraViewState.value = CameraViewState.Detected()
-        }.launchIn(viewModelScope)
-
-        viewContract.onConfirmedDetectedObjectWithCameraHold().onEach {
-            confirmedObject = it
-            cameraViewState.value = CameraViewState.Searching(it)
-
         }.launchIn(viewModelScope)
 
         viewContract.onConfirmingDetectedObject().onEachEvent {
             cameraViewState.value = CameraViewState.Confirming()
         }.launchIn(viewModelScope)
 
-        viewContract.onNothingFoundInFrame().onEachEvent {
-            cameraViewState.value = CameraViewState.Detecting()
+        viewContract.onConfirmedDetectedObjectWithCameraHold().onEach {
+            cameraViewState.value = CameraViewState.Searching(it)
+
         }.launchIn(viewModelScope)
 
         viewContract.onTextDetected().onEach {
-            onSearchCompleted(it)
+            if(it != null) {
+                cameraViewState.value = CameraViewState.Searched(it)
+            }
 
         }.launchIn(viewModelScope)
-
     }
 
+    fun addProduct(context: Context, bitmap: Bitmap?, product: Product) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                //save bitmap to app-private storage
+                //TODO scoped storage?
+                if(bitmap != null) {
+                    val uri = BitmapUtils.saveBitmapToAppPrivateStorage(context, bitmap,
+                            "my_products", System.currentTimeMillis().toString())
 
-    /*fun triggerTextDetection(detectedObjectInfo: DetectedObjectInfo) {
+                    product.imagePath = uri.toString()
+                }
+                productsRepo.insertProduct(product)
 
-        val textProcessor = TextRecognitionProcessor()
-        textProcessor.processBitmap(detectedObjectInfo.getBitmap(), null)
-        //withContext()
-        Log.v("TAGGG", "triggerSearch")
-        //TODO text-processor
-        //detectedObjectInfo.getBitmap();
-        //search text.
-        //another thread -> run text recogn on this bitmap
+                cameraViewState.value = CameraViewState.ProductAdded()
+            }
+        }
+    }
 
-
-        //uploadsRepository!!.search(detectedObjectInfo) { detectedObject, products ->
-        //    onSearchCompleted(detectedObject, products)
-        //}
-
-
-    }*/
 
     fun markCameraLive() {
         isCameraLive = true
@@ -110,13 +119,7 @@ class CameraXViewModel @ViewModelInject internal constructor(
 
     }
 
-    fun onSearchCompleted(searchedObject: SearchedObject?) {
 
-        Log.v("Check", "onSearchCompleted - ")
-        if(searchedObject != null)
-            cameraViewState.value = CameraViewState.Searched(searchedObject)
-    //. CameraViewState.SEARCHED(lConfirmedObject, products)
-    }
 
 
 

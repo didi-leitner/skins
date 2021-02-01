@@ -58,9 +58,12 @@ class CameraXLivePreviewActivity :
     private val cameraXViewIntent = CameraXViewIntent()
 
     private var cameraProvider: ProcessCameraProvider? = null
+
     private var analysisUseCase: ImageAnalysis? = null
     private var previewUseCase: Preview? = null
+
     private var prominentObjectImageProcessor: ProminentObjectDetectorProcessor? = null
+
     private lateinit var graphicOverlay: GraphicOverlay
     private lateinit var cameraSelector: CameraSelector
     private lateinit var previewView: PreviewView
@@ -333,10 +336,7 @@ class CameraXLivePreviewActivity :
 
     override fun onClick(view: View) {
         when (view.id) {
-            /*R.id.product_search_button -> {
-                searchButton?.isEnabled = false
-                cameraXViewModel?.onSearchButtonClicked()
-            }*/
+
             R.id.bottom_sheet_scrim_view -> bottomSheetBehavior?.setState(BottomSheetBehavior.STATE_HIDDEN)
             R.id.close_button -> onBackPressed()
             R.id.flash_button -> {
@@ -354,7 +354,6 @@ class CameraXLivePreviewActivity :
     }
 
     private fun startCameraPreview() {
-        Log.v("UUU","startCameraPreview " + cameraXViewModel.isCameraLive)
         if (!cameraXViewModel.isCameraLive) {
             try {
                 bindAllCameraUseCases()
@@ -426,7 +425,7 @@ class CameraXLivePreviewActivity :
         productRecyclerView = findViewById<RecyclerView>(R.id.product_recycler_view).apply {
             setHasFixedSize(true)
             layoutManager = LinearLayoutManager(this@CameraXLivePreviewActivity)
-            adapter = BottomSheetProductAdapter(ImmutableList.of())
+            adapter = BottomSheetProductAdapter(ImmutableList.of(), cameraXViewIntent)
         }
     }
 
@@ -498,6 +497,8 @@ class CameraXLivePreviewActivity :
 
     override fun onTextDetected() = cameraXViewIntent.onTextDetected.filterNotNull()
 
+    override fun onProductConfirmedWithClick() = cameraXViewIntent.onProductClicked.filterNotNull()
+
     override fun render(cameraViewState: CameraViewState) {
 
         val wasPromptChipGone = promptChip!!.visibility == View.GONE
@@ -536,8 +537,6 @@ class CameraXLivePreviewActivity :
                 promptChip?.visibility = View.VISIBLE
                 promptChip?.setText(R.string.prompt_searching)
                 stopCameraPreview()
-
-                //bindTextRecognitionUseCase(cameraViewState.bitmap)
             }
             is CameraViewState.Searched -> {
                 promptChip?.visibility = View.GONE
@@ -553,10 +552,20 @@ class CameraXLivePreviewActivity :
                         .getQuantityString(
                                 R.plurals.bottom_sheet_title, productList.size, productList.size
                         )
-                productRecyclerView?.adapter = BottomSheetProductAdapter(productList)
+                productRecyclerView?.adapter = BottomSheetProductAdapter(productList, cameraXViewIntent)
                 slidingSheetUpFromHiddenState = true
                 bottomSheetBehavior?.peekHeight = previewView.height?.div(2) ?: BottomSheetBehavior.PEEK_HEIGHT_AUTO
                 bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
+            }
+
+            is CameraViewState.SearchedProductConfirmed -> {
+                cameraXViewModel.addProduct(this, bottomSheetScrimView?.getThumbnailBitmap(), cameraViewState.product)
+
+            }
+
+            is CameraViewState.ProductAdded -> {
+                finish()
+                //bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
             }
 
         }

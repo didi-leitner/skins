@@ -2,6 +2,7 @@ package com.na.didi.skinz.view.viewintent
 
 import com.na.didi.skinz.camera.DetectedObjectInfo
 import com.na.didi.skinz.camera.SearchedObject
+import com.na.didi.skinz.data.model.Product
 import com.na.didi.skinz.util.Event
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -20,5 +21,7 @@ class CameraXViewIntent {
     val onConfirmingDetectedObject: MutableStateFlow<Event<Boolean?>> = MutableStateFlow(Event(null))
 
     val onTextDetected: MutableStateFlow<SearchedObject?> = MutableStateFlow(null)
+
+    val onProductClicked: MutableStateFlow<Product?> = MutableStateFlow(null)
 
 }

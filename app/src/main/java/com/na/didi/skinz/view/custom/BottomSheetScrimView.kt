@@ -117,6 +117,8 @@ class BottomSheetScrimView(context: Context, attrs: AttributeSet) : View(context
         invalidate()
     }
 
+    fun getThumbnailBitmap(): Bitmap = thumbnailBitmap
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 

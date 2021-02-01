@@ -2,6 +2,7 @@ package com.na.didi.skinz.di
 
 import android.content.Context
 import com.na.didi.skinz.data.db.AppDatabase
+import com.na.didi.skinz.data.db.dao.ProductsDao
 import com.na.didi.skinz.data.db.dao.UploadsDao
 import dagger.Module
 import dagger.Provides
@@ -23,6 +24,11 @@ class DatabaseModule {
     @Provides
     fun provideUploadsDao(appDatabase: AppDatabase): UploadsDao {
         return appDatabase.uploadsDao()
+    }
+
+    @Provides
+    fun provideProductsDao(appDatabase: AppDatabase): ProductsDao {
+        return appDatabase.productsDao()
     }
 
 }

@@ -6,13 +6,16 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.na.didi.skinz.data.db.dao.ProductsDao
 import com.na.didi.skinz.data.db.dao.UploadsDao
+import com.na.didi.skinz.data.model.Product
 import com.na.didi.skinz.data.model.UploadsModel
 
 
-@Database(entities = [UploadsModel::class], version = 2, exportSchema = false)
+@Database(entities = [UploadsModel::class, Product::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun uploadsDao(): UploadsDao
+    abstract fun productsDao(): ProductsDao
 
     companion object {
 

@@ -2,6 +2,7 @@ package com.na.didi.skinz.view.viewstate
 
 import com.na.didi.skinz.camera.DetectedObjectInfo
 import com.na.didi.skinz.camera.SearchedObject
+import com.na.didi.skinz.data.model.Product
 
 /*enum class CameraViewState {
     NOT_STARTED,
@@ -22,6 +23,8 @@ sealed class CameraViewState {
     class Confirmed(): CameraViewState()
     data class Searching(val detectedObjectInfo: DetectedObjectInfo): CameraViewState()
     data class Searched(val searchedObject: SearchedObject) : CameraViewState()
+    data class SearchedProductConfirmed(val product: Product) : CameraViewState()
+    class ProductAdded() : CameraViewState()
 
 
 }

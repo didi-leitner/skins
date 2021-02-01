@@ -254,7 +254,8 @@ class ProminentObjectDetectorProcessor(cameraXViewIntent: CameraXViewIntent, gra
 
             }
 
-            return listOf(Product(null, titleCandidate, subtitleCandidate))
+
+            return listOf(Product(0, titleCandidate, subtitleCandidate, null, System.currentTimeMillis()))
 
         }
 

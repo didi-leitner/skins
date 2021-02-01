@@ -11,20 +11,23 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.Adapter
 import com.na.didi.skinz.R
 import com.na.didi.skinz.data.model.Product
+import com.na.didi.skinz.view.viewintent.CameraXViewIntent
 
 /** Presents the list of product items from cloud product search.  */
-class BottomSheetProductAdapter(private val productList: List<Product>) : Adapter<BottomSheetProductAdapter.ProductViewHolder>() {
+class BottomSheetProductAdapter(private val productList: List<Product>, val cameraViewIntent: CameraXViewIntent)
+    : Adapter<BottomSheetProductAdapter.ProductViewHolder>() {
 
     class ProductViewHolder private constructor(view: View) : RecyclerView.ViewHolder(view) {
 
         private val imageView: ImageView = view.findViewById(R.id.product_image)
         private val titleView: TextView = view.findViewById(R.id.product_title)
         private val subtitleView: TextView = view.findViewById(R.id.product_subtitle)
+        private val parent: ViewGroup = view.findViewById(R.id.product_item_layout)
         //private val imageSize: Int = view.resources.getDimensionPixelOffset(R.dimen.product_item_image_size)
 
-        fun bindProduct(product: Product) {
+        fun bindProduct(product: Product, viewIntent: CameraXViewIntent) {
             imageView.setImageDrawable(null)
-            if (!TextUtils.isEmpty(product.imageUrl)) {
+            if (!TextUtils.isEmpty(product.imagePath)) {
                 //TODO Glide
                 //ImageDownloadTask(imageView, imageSize).execute(product.imageUrl)
             } else {
@@ -32,6 +35,10 @@ class BottomSheetProductAdapter(private val productList: List<Product>) : Adapte
             }
             titleView.text = product.title
             subtitleView.text = product.subtitle
+            parent.setOnClickListener { view ->
+                viewIntent.onProductClicked.value = product
+            }
+
         }
 
         companion object {
@@ -44,7 +51,7 @@ class BottomSheetProductAdapter(private val productList: List<Product>) : Adapte
             ProductViewHolder.create(parent)
 
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
-        holder.bindProduct(productList[position])
+        holder.bindProduct(productList[position], cameraViewIntent)
     }
 
     override fun getItemCount(): Int = productList.size

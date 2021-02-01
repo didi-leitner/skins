@@ -2,6 +2,7 @@ package com.na.didi.skinz.view.viewcontract
 
 import com.na.didi.skinz.camera.DetectedObjectInfo
 import com.na.didi.skinz.camera.SearchedObject
+import com.na.didi.skinz.data.model.Product
 import com.na.didi.skinz.util.Event
 import com.na.didi.skinz.view.viewstate.CameraViewState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,4 +26,6 @@ interface CameraXPreviewViewContract {
     fun onNothingFoundInFrame(): Flow<Event<Boolean?>>
 
     fun onTextDetected(): Flow<SearchedObject?>
+
+    fun onProductConfirmedWithClick(): Flow<Product>
 }
