@@ -10,13 +10,16 @@ sealed class UploadsViewState {
             val error: String? = null
     ) : UploadsViewState()
 
+
+
+    object Loading: UploadsViewState()
+
+    object Error: UploadsViewState()
+
+}
+
+sealed class UploadsViewEffect {
     data class OpenContent(
-            val position: Int,
             val content: UploadsModel
-    ) : UploadsViewState()
-
-    class Loading(): UploadsViewState()
-
-    class Error(): UploadsViewState()
-
+    ) : UploadsViewEffect()
 }

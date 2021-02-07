@@ -29,7 +29,7 @@ class HomeViewPagerFragment : Fragment() {
         val fab: FloatingActionButton = binding.fab
 
         fab.setOnClickListener { view ->
-            view.findNavController().navigate(R.id.action_home_view_pager_fragment_to_camera_activity)
+            view.findNavController().navigate(R.id.action_home_view_pager_fragment_to_camera_fragment)
         }
 
 

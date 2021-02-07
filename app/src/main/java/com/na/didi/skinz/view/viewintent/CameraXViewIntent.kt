@@ -1,27 +1,29 @@
 package com.na.didi.skinz.view.viewintent
 
+import android.content.Context
+import android.graphics.Bitmap
 import com.na.didi.skinz.camera.DetectedObjectInfo
 import com.na.didi.skinz.camera.SearchedObject
 import com.na.didi.skinz.data.model.Product
-import com.na.didi.skinz.util.Event
-import kotlinx.coroutines.flow.MutableStateFlow
 
 
-class CameraXViewIntent {
+sealed class CameraXViewIntent {
 
     //view interractions to be observed
-    val onBottomSheetHidden: MutableStateFlow<Event<Boolean?>> = MutableStateFlow(Event(null))
+    object OnBottomSheetHidden: CameraXViewIntent()
 
-    val onNothingFoundInFrame: MutableStateFlow<Event<Boolean?>> = MutableStateFlow(Event(null))
+    object OnNothingFoundInFrame: CameraXViewIntent()
 
-    val onMovedAwayFromDetectedObject: MutableStateFlow<Event<Boolean?>> = MutableStateFlow(Event(null))
+    object OnMovedAwayFromDetectedObject: CameraXViewIntent()
 
-    val onConfirmedDetectedObject: MutableStateFlow<DetectedObjectInfo?> = MutableStateFlow(null)
+    data class OnConfirmedDetectedObjec(val detectedObjectInfo: DetectedObjectInfo?): CameraXViewIntent()
 
-    val onConfirmingDetectedObject: MutableStateFlow<Event<Boolean?>> = MutableStateFlow(Event(null))
+    object OnConfirmingDetectedObject: CameraXViewIntent()
 
-    val onTextDetected: MutableStateFlow<SearchedObject?> = MutableStateFlow(null)
+    data class OnTextDetected(val searchedObject: SearchedObject): CameraXViewIntent()
 
-    val onProductClicked: MutableStateFlow<Product?> = MutableStateFlow(null)
+    data class OnProductClicked(val product: Product): CameraXViewIntent()
+
+    data class AddProduct(val context: Context, val bitmap: Bitmap?, val product: Product): CameraXViewIntent()
 
 }

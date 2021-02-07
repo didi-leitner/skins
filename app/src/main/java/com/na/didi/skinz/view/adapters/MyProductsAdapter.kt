@@ -1,19 +1,17 @@
 package com.na.didi.skinz.view.adapters
 
+import android.util.Log
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.na.didi.skinz.data.model.Product
 import com.na.didi.skinz.databinding.ListItemMyProductBinding
-import com.na.didi.skinz.util.Event
-import com.na.didi.skinz.view.viewintent.MyProductsViewIntent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @ExperimentalCoroutinesApi
-class MyProductsAdapter(val viewIntent: MyProductsViewIntent) : PagingDataAdapter<Product,
+class MyProductsAdapter(val productClickListener: ProductClickListener) : PagingDataAdapter<Product,
         MyProductsAdapter.MyProductsViewHolder>(MyProductsDiffCallback()) {
 
 
@@ -27,19 +25,17 @@ class MyProductsAdapter(val viewIntent: MyProductsViewIntent) : PagingDataAdapte
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyProductsViewHolder {
         return MyProductsViewHolder(
-                ListItemMyProductBinding.inflate(LayoutInflater.from(parent.context), parent, false), viewIntent
+                ListItemMyProductBinding.inflate(LayoutInflater.from(parent.context), parent, false), productClickListener
         )
     }
 
-    class MyProductsViewHolder(private val binding: ListItemMyProductBinding, private val intent: MyProductsViewIntent)
+    class MyProductsViewHolder(private val binding: ListItemMyProductBinding, private val productClickListener: ProductClickListener)
         : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: Product, position: Int) {
             binding.apply {
                 product = item
-                clickListener = View.OnClickListener { view ->
-                    intent.onListItemClicked.value = Event(MyProductsViewIntent.SelectContent(item, position))
-                }
+                clickListener = productClickListener
                 executePendingBindings()
             }
         }
@@ -57,6 +53,16 @@ class MyProductsAdapter(val viewIntent: MyProductsViewIntent) : PagingDataAdapte
             return oldItem == newItem
         }
 
+    }
+
+
+}
+
+class ProductClickListener(val clickListener: (product: Product) -> Unit) {
+    fun onClick(product: Product) {
+
+        Log.v("TAGGG","onclickcalled " + product + " aaand " + clickListener )
+        clickListener(product)
     }
 }
 

@@ -6,16 +6,13 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
-import com.na.didi.skinz.view.viewintent.CameraXViewIntent
 import java.io.IOException
 
-class TextRecognitionProcessor(cameraXViewIntent: CameraXViewIntent) : FrameProcessorBase<Text>() {
+class TextRecognitionProcessor() : FrameProcessorBase<Text>() {
 
     private val textRecognizer: TextRecognizer
-    private val cameraXViewIntent: CameraXViewIntent
     init {
         textRecognizer = TextRecognition.getClient()
-        this.cameraXViewIntent = cameraXViewIntent
     }
 
     fun detectTextInImage(image: InputImage): Task<Text> {

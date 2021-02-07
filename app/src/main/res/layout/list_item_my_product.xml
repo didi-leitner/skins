@@ -6,7 +6,7 @@
     <data>
         <variable
             name="clickListener"
-            type="android.view.View.OnClickListener"/>
+            type="com.na.didi.skinz.view.adapters.ProductClickListener"/>
         <variable
             name="product"
             type="com.na.didi.skinz.data.model.Product"/>
@@ -18,7 +18,7 @@
         android:layout_marginStart="@dimen/card_side_margin"
         android:layout_marginEnd="@dimen/card_side_margin"
         android:layout_marginBottom="@dimen/card_bottom_margin"
-        android:onClick="@{clickListener}"
+        android:onClick="@{() -> clickListener.onClick(product)}"
         app:cardElevation="@dimen/card_elevation"
         app:cardPreventCornerOverlap="false"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.Hangerz.Card">

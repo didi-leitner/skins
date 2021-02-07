@@ -2,6 +2,7 @@ package com.na.didi.skinz.view.adapters
 
 
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,10 +12,9 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.Adapter
 import com.na.didi.skinz.R
 import com.na.didi.skinz.data.model.Product
-import com.na.didi.skinz.view.viewintent.CameraXViewIntent
 
 /** Presents the list of product items from cloud product search.  */
-class BottomSheetProductAdapter(private val productList: List<Product>, val cameraViewIntent: CameraXViewIntent)
+class BottomSheetProductAdapter(private val productList: List<Product>, val clickListener: ProductPreviewClickListener)
     : Adapter<BottomSheetProductAdapter.ProductViewHolder>() {
 
     class ProductViewHolder private constructor(view: View) : RecyclerView.ViewHolder(view) {
@@ -25,7 +25,7 @@ class BottomSheetProductAdapter(private val productList: List<Product>, val came
         private val parent: ViewGroup = view.findViewById(R.id.product_item_layout)
         //private val imageSize: Int = view.resources.getDimensionPixelOffset(R.dimen.product_item_image_size)
 
-        fun bindProduct(product: Product, viewIntent: CameraXViewIntent) {
+        fun bindProduct(product: Product, clickListener: ProductPreviewClickListener) {
             imageView.setImageDrawable(null)
             if (!TextUtils.isEmpty(product.imagePath)) {
                 //TODO Glide
@@ -35,8 +35,8 @@ class BottomSheetProductAdapter(private val productList: List<Product>, val came
             }
             titleView.text = product.title
             subtitleView.text = product.subtitle
-            parent.setOnClickListener { view ->
-                viewIntent.onProductClicked.value = product
+            parent.setOnClickListener {
+                clickListener.onClick(product)
             }
 
         }
@@ -51,8 +51,16 @@ class BottomSheetProductAdapter(private val productList: List<Product>, val came
             ProductViewHolder.create(parent)
 
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
-        holder.bindProduct(productList[position], cameraViewIntent)
+        holder.bindProduct(productList[position], clickListener)
     }
 
     override fun getItemCount(): Int = productList.size
+}
+
+class ProductPreviewClickListener(val clickListener: (product: Product) -> Unit) {
+    fun onClick(product: Product) {
+
+        Log.v("TAGGG","onclickcalled " + product + " aaand " + clickListener )
+        clickListener(product)
+    }
 }

@@ -23,9 +23,10 @@ class ProductsRepo @Inject constructor(private val productsDao: ProductsDao) {
                 config = PagingConfig(enablePlaceholders = false, pageSize = DB_PAGE_SIZE),
                 pagingSourceFactory = { productsDao.getProductsPaged() }
         ).flow.cachedIn(scope)
+        //flow.cachedIn
     }
 
     companion object {
-        private const val DB_PAGE_SIZE = 10
+        private const val DB_PAGE_SIZE = 5
     }
 }

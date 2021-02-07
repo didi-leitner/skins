@@ -10,8 +10,8 @@
         android:label="HomeViewPagerFragment">
 
         <action
-            android:id="@+id/action_home_view_pager_fragment_to_camera_activity"
-            app:destination="@id/cameraActivity"
+            android:id="@+id/action_home_view_pager_fragment_to_camera_fragment"
+            app:destination="@id/cameraFragment"
             app:enterAnim="@anim/slide_in_right"
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
@@ -19,9 +19,9 @@
 
     </fragment>
 
-    <activity
-        android:id="@+id/cameraActivity"
-        android:name="com.na.didi.skinz.view.activity.CameraXLivePreviewActivity"
+    <fragment
+        android:id="@+id/cameraFragment"
+        android:name="com.na.didi.skinz.view.activity.CameraXLivePreviewFragment"
         android:label="CameraFragment" />
 
 

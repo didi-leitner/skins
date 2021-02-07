@@ -9,16 +9,19 @@ import android.os.Build.VERSION_CODES
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
-import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.common.annotation.KeepName
@@ -29,16 +32,19 @@ import com.google.mlkit.common.MlKitException
 import com.na.didi.skinz.R
 import com.na.didi.skinz.camera.GraphicOverlay
 import com.na.didi.skinz.camera.imageprocessor.ProminentObjectDetectorProcessor
-import com.na.didi.skinz.util.Event
+import com.na.didi.skinz.databinding.FragmentCameraBinding
 import com.na.didi.skinz.view.adapters.BottomSheetProductAdapter
+import com.na.didi.skinz.view.adapters.ProductPreviewClickListener
 import com.na.didi.skinz.view.custom.BottomSheetScrimView
 import com.na.didi.skinz.view.viewcontract.CameraXPreviewViewContract
 import com.na.didi.skinz.view.viewintent.CameraXViewIntent
 import com.na.didi.skinz.view.viewstate.CameraViewState
 import com.na.didi.skinz.viewmodel.CameraXViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.*
 import kotlin.math.abs
@@ -48,14 +54,14 @@ import kotlin.math.min
 @KeepName
 @RequiresApi(VERSION_CODES.LOLLIPOP)
 @AndroidEntryPoint
-class CameraXLivePreviewActivity :
-        AppCompatActivity(),
+class CameraXLivePreviewFragment :
+        Fragment(),
         ActivityCompat.OnRequestPermissionsResultCallback,
         View.OnClickListener,
         CameraXPreviewViewContract {
 
     private val cameraXViewModel: CameraXViewModel by viewModels()
-    private val cameraXViewIntent = CameraXViewIntent()
+    private val viewIntentChannel = Channel<CameraXViewIntent>(Channel.CONFLATED)
 
     private var cameraProvider: ProcessCameraProvider? = null
 
@@ -87,9 +93,10 @@ class CameraXLivePreviewActivity :
     private var bottomSheetTitleView: TextView? = null
     private var slidingSheetUpFromHiddenState: Boolean = false
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        Log.d(TAG, "onCreate")
+    override fun onCreateView(
+            inflater: LayoutInflater, container: ViewGroup?,
+            savedInstanceState: Bundle?
+    ): View {
 
         if (savedInstanceState != null) {
             selectedModel =
@@ -103,43 +110,47 @@ class CameraXLivePreviewActivity :
                             CameraSelector.LENS_FACING_FRONT
                     )
         }
+        val binding = FragmentCameraBinding.inflate(inflater, container, false)
 
-        setContentView(R.layout.fragment_camera)
 
-        previewView = findViewById(R.id.camera_preview)
-        graphicOverlay = findViewById<GraphicOverlay>(R.id.camera_preview_graphic_overlay).apply {
-            setOnClickListener(this@CameraXLivePreviewActivity)
+        previewView = binding.cameraPreview
+        graphicOverlay = binding.cameraPreviewOverlay.cameraPreviewGraphicOverlay.apply {
+            setOnClickListener(this@CameraXLivePreviewFragment)
         }
 
-        promptChip = findViewById(R.id.bottom_prompt_chip)
+        promptChip = binding.cameraPreviewOverlay.bottomPromptChip
         promptChipAnimator =
-                (AnimatorInflater.loadAnimator(this, R.animator.bottom_prompt_chip_enter) as AnimatorSet).apply {
+                (AnimatorInflater.loadAnimator(requireContext(), R.animator.bottom_prompt_chip_enter) as AnimatorSet).apply {
                     setTarget(promptChip)
                 }
-        searchProgressBar = findViewById(R.id.search_progress_bar)
+        searchProgressBar = binding.cameraPreviewOverlay.searchProgressBar
 
-        setUpBottomSheet()
+        setUpBottomSheet(binding)
 
-        findViewById<View>(R.id.close_button).setOnClickListener(this)
-        flashButton = findViewById<View>(R.id.flash_button).apply {
-            setOnClickListener(this@CameraXLivePreviewActivity)
+        binding.topActionBar.closeButton.setOnClickListener(this)
+
+        flashButton = binding.topActionBar.flashButton.apply {
+            setOnClickListener(this@CameraXLivePreviewFragment)
         }
-        settingsButton = findViewById<View>(R.id.settings_button).apply {
-            setOnClickListener(this@CameraXLivePreviewActivity)
+        settingsButton = binding.topActionBar.settingsButton.apply {
+            setOnClickListener(this@CameraXLivePreviewFragment)
         }
-        /*val facingSwitch = findViewById<ToggleButton>(R.id.facing_switch)
-        facingSwitch.setOnCheckedChangeListener(this)
-         */
+
 
         cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
         setupCameraProvider()
-        cameraXViewModel.bindViewIntents(this@CameraXLivePreviewActivity)
+        cameraXViewModel.bindViewIntents(this@CameraXLivePreviewFragment)
 
 
         if (!allPermissionsGranted()) {
             runtimePermissions
         }
+
+        return binding.root
+
+
     }
+
 
     override fun onSaveInstanceState(bundle: Bundle) {
         super.onSaveInstanceState(bundle)
@@ -148,7 +159,7 @@ class CameraXLivePreviewActivity :
     }
 
 
-    public override fun onResume() {
+    override fun onResume() {
         super.onResume()
 
         cameraXViewModel.markCameraFrozen()
@@ -168,7 +179,7 @@ class CameraXLivePreviewActivity :
 
     }
 
-    public override fun onDestroy() {
+    override fun onDestroy() {
         super.onDestroy()
 
         prominentObjectImageProcessor?.run {
@@ -187,7 +198,12 @@ class CameraXLivePreviewActivity :
                 prominentObjectImageProcessor!!.stop()
             }
 
-            prominentObjectImageProcessor = ProminentObjectDetectorProcessor(cameraXViewIntent, graphicOverlay)
+
+            prominentObjectImageProcessor = ProminentObjectDetectorProcessor({
+                lifecycleScope.launch{
+                    viewIntentChannel.send(it)
+                }
+            } , graphicOverlay)
 
 
             needUpdateGraphicOverlayImageSourceInfo = true
@@ -200,7 +216,7 @@ class CameraXLivePreviewActivity :
             builder.setTargetAspectRatio(screenAspectRatio)
             analysisUseCase = builder.build()
             analysisUseCase?.setAnalyzer(
-                    ContextCompat.getMainExecutor(this),
+                    ContextCompat.getMainExecutor(requireContext()),
                     { imageProxy: ImageProxy ->
 
                         if (needUpdateGraphicOverlayImageSourceInfo) {
@@ -230,7 +246,7 @@ class CameraXLivePreviewActivity :
                                     "Failed to process image. Error: " + e.localizedMessage
                             )
                             Toast.makeText(
-                                    applicationContext,
+                                    requireContext(),
                                     e.localizedMessage,
                                     Toast.LENGTH_SHORT
                             )
@@ -258,10 +274,7 @@ class CameraXLivePreviewActivity :
 
         // Get screen metrics used to setup camera for full screen resolution
         val metrics = DisplayMetrics().also { previewView.display.getRealMetrics(it) }
-        Log.d(TAG, "Screen metrics: ${metrics.widthPixels} x ${metrics.heightPixels}")
-
         val screenAspectRatio = aspectRatio(metrics.widthPixels, metrics.heightPixels)
-        Log.d(TAG, "Preview aspect ratio: $screenAspectRatio")
 
 
         val builder = Preview.Builder()
@@ -269,7 +282,6 @@ class CameraXLivePreviewActivity :
         previewUseCase = builder.build()
         previewUseCase!!.setSurfaceProvider(previewView.getSurfaceProvider())
 
-        Log.v(TAG,"bindPreviewUseCase " + previewView.getSurfaceProvider() + " " + cameraProvider)
         cameraProvider!!.bindToLifecycle(/* lifecycleOwner= */this, cameraSelector!!, previewUseCase)
 
         previewUseCase!!.setSurfaceProvider(previewView.getSurfaceProvider())
@@ -284,8 +296,8 @@ class CameraXLivePreviewActivity :
 
     private val requiredPermissions: Array<String?>
         get() = try {
-            val info = this.packageManager
-                    .getPackageInfo(this.packageName, PackageManager.GET_PERMISSIONS)
+            val info = requireContext().packageManager
+                    .getPackageInfo(requireContext().packageName, PackageManager.GET_PERMISSIONS)
             val ps = info.requestedPermissions
             if (ps != null && ps.isNotEmpty()) {
                 ps
@@ -298,7 +310,7 @@ class CameraXLivePreviewActivity :
 
     private fun allPermissionsGranted(): Boolean {
         for (permission in requiredPermissions) {
-            if (!isPermissionGranted(this, permission)) {
+            if (!isPermissionGranted(requireContext(), permission)) {
                 return false
             }
         }
@@ -309,13 +321,13 @@ class CameraXLivePreviewActivity :
         get() {
             val allNeededPermissions: MutableList<String?> = ArrayList()
             for (permission in requiredPermissions) {
-                if (!isPermissionGranted(this, permission)) {
+                if (!isPermissionGranted(requireContext(), permission)) {
                     allNeededPermissions.add(permission)
                 }
             }
             if (allNeededPermissions.isNotEmpty()) {
                 ActivityCompat.requestPermissions(
-                        this,
+                        requireActivity(),
                         allNeededPermissions.toTypedArray(),
                         PERMISSION_REQUESTS
                 )
@@ -338,7 +350,7 @@ class CameraXLivePreviewActivity :
         when (view.id) {
 
             R.id.bottom_sheet_scrim_view -> bottomSheetBehavior?.setState(BottomSheetBehavior.STATE_HIDDEN)
-            R.id.close_button -> onBackPressed()
+            R.id.close_button -> TODO()
             R.id.flash_button -> {
                 if (flashButton?.isSelected == true) {
                     flashButton?.isSelected = false
@@ -373,8 +385,10 @@ class CameraXLivePreviewActivity :
         }
     }
 
-    private fun setUpBottomSheet() {
-        bottomSheetBehavior = BottomSheetBehavior.from(findViewById(R.id.bottom_sheet))
+    private fun setUpBottomSheet(binding: FragmentCameraBinding) {
+
+        //binding.bottomSheet
+        bottomSheetBehavior = BottomSheetBehavior.from(binding.bottomSheetContainer)
         bottomSheetBehavior?.addBottomSheetCallback(
                 object : BottomSheetBehavior.BottomSheetCallback() {
                     override fun onStateChanged(bottomSheet: View, newState: Int) {
@@ -385,7 +399,9 @@ class CameraXLivePreviewActivity :
 
                         when (newState) {
                             BottomSheetBehavior.STATE_HIDDEN -> {
-                                cameraXViewIntent.onBottomSheetHidden.value = Event(true)
+                                lifecycleScope.launch {
+                                    viewIntentChannel.send(CameraXViewIntent.OnBottomSheetHidden)
+                                }
                             }
                             BottomSheetBehavior.STATE_COLLAPSED,
                             BottomSheetBehavior.STATE_EXPANDED,
@@ -417,20 +433,27 @@ class CameraXLivePreviewActivity :
                     }
                 })
 
-        bottomSheetScrimView = findViewById<BottomSheetScrimView>(R.id.bottom_sheet_scrim_view).apply {
-            setOnClickListener(this@CameraXLivePreviewActivity)
+        bottomSheetScrimView = binding.bottomSheetScrimView.apply {
+            setOnClickListener(this@CameraXLivePreviewFragment)
         }
 
-        bottomSheetTitleView = findViewById(R.id.bottom_sheet_title)
-        productRecyclerView = findViewById<RecyclerView>(R.id.product_recycler_view).apply {
+
+        bottomSheetTitleView = binding.bottomSheet.bottomSheetTitle
+        productRecyclerView = binding.bottomSheet.productRecyclerView.apply {
             setHasFixedSize(true)
-            layoutManager = LinearLayoutManager(this@CameraXLivePreviewActivity)
-            adapter = BottomSheetProductAdapter(ImmutableList.of(), cameraXViewIntent)
+            layoutManager = LinearLayoutManager(requireContext())
+
+            val clickListener = ProductPreviewClickListener{
+                lifecycleScope.launch {
+                    viewIntentChannel.send(CameraXViewIntent.OnProductClicked(it))
+                }
+            }
+            adapter = BottomSheetProductAdapter(ImmutableList.of(), clickListener)
         }
     }
 
     private fun setupCameraProvider() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
         cameraProviderFuture.addListener(Runnable
         {
             // Used to bind the lifecycle of cameras to the lifecycle owner
@@ -441,7 +464,7 @@ class CameraXLivePreviewActivity :
                 bindAllCameraUseCases()
             }
 
-        }, ContextCompat.getMainExecutor(this))
+        }, ContextCompat.getMainExecutor(requireContext()))
     }
 
 
@@ -483,21 +506,8 @@ class CameraXLivePreviewActivity :
 
     }
 
-    override fun initState() = MutableStateFlow(true)
 
-    override fun onBottomSheetHidden() = cameraXViewIntent.onBottomSheetHidden.filterNotNull()
-
-    override fun onMovedAwayFromDetectedObject() = cameraXViewIntent.onMovedAwayFromDetectedObject.filterNotNull()
-
-    override fun onConfirmedDetectedObjectWithCameraHold() = cameraXViewIntent.onConfirmedDetectedObject.filterNotNull()
-
-    override fun onConfirmingDetectedObject() = cameraXViewIntent.onConfirmingDetectedObject.filterNotNull()
-
-    override fun onNothingFoundInFrame() = cameraXViewIntent.onNothingFoundInFrame.filterNotNull()
-
-    override fun onTextDetected() = cameraXViewIntent.onTextDetected.filterNotNull()
-
-    override fun onProductConfirmedWithClick() = cameraXViewIntent.onProductClicked.filterNotNull()
+    override fun viewIntentFlow() = viewIntentChannel.receiveAsFlow().filterNotNull()
 
     override fun render(cameraViewState: CameraViewState) {
 
@@ -552,19 +562,30 @@ class CameraXLivePreviewActivity :
                         .getQuantityString(
                                 R.plurals.bottom_sheet_title, productList.size, productList.size
                         )
-                productRecyclerView?.adapter = BottomSheetProductAdapter(productList, cameraXViewIntent)
+                val clickListener = ProductPreviewClickListener{
+                    lifecycleScope.launch {
+                        viewIntentChannel.send(CameraXViewIntent.OnProductClicked(it))
+                    }
+                }
+                productRecyclerView?.adapter = BottomSheetProductAdapter(productList, clickListener)
                 slidingSheetUpFromHiddenState = true
                 bottomSheetBehavior?.peekHeight = previewView.height?.div(2) ?: BottomSheetBehavior.PEEK_HEIGHT_AUTO
                 bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
             }
 
             is CameraViewState.SearchedProductConfirmed -> {
-                cameraXViewModel.addProduct(this, bottomSheetScrimView?.getThumbnailBitmap(), cameraViewState.product)
+
+                lifecycleScope.launch {
+                    //TOODO inject Context in BitmapUtils
+                    viewIntentChannel.send(CameraXViewIntent.AddProduct(requireContext(), bottomSheetScrimView?.getThumbnailBitmap(), cameraViewState.product))
+
+                }
 
             }
 
             is CameraViewState.ProductAdded -> {
-                finish()
+                //TODO nav event
+                //finish()
                 //bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
             }
 

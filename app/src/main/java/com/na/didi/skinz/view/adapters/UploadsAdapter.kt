@@ -1,22 +1,17 @@
 package com.na.didi.skinz.view.adapters
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.na.didi.skinz.data.model.UploadsModel
 import com.na.didi.skinz.databinding.ListItemUploadBinding
-import com.na.didi.skinz.util.Event
-import com.na.didi.skinz.view.viewintent.UploadsViewIntent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @ExperimentalCoroutinesApi
-class UploadsAdapter(uploadsIntent: UploadsViewIntent) : PagingDataAdapter<UploadsModel,
+class UploadsAdapter(val clickListener: UploadItemClickListener) : PagingDataAdapter<UploadsModel,
         UploadsAdapter.UploadsViewHolder>(UploadsDiffCallback()) {
-
-    val intent: UploadsViewIntent = uploadsIntent
 
 
     override fun onBindViewHolder(holder: UploadsViewHolder, position: Int) {
@@ -29,19 +24,18 @@ class UploadsAdapter(uploadsIntent: UploadsViewIntent) : PagingDataAdapter<Uploa
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UploadsViewHolder {
         return UploadsViewHolder(
-                ListItemUploadBinding.inflate(LayoutInflater.from(parent.context), parent, false), intent
+                ListItemUploadBinding.inflate(LayoutInflater.from(parent.context), parent, false), clickListener
         )
     }
 
-    class UploadsViewHolder(private val binding: ListItemUploadBinding, private val intent: UploadsViewIntent)
+    class UploadsViewHolder(private val binding: ListItemUploadBinding, val _clickListener: UploadItemClickListener)
         : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: UploadsModel, position: Int) {
             binding.apply {
                 upload = item
-                clickListener = View.OnClickListener { view ->
-                    intent.onListItemClicked.value = Event(UploadsViewIntent.SelectContent(item, position))
-                }
+                clickListener = _clickListener
+
                 executePendingBindings()
             }
         }
@@ -61,6 +55,12 @@ class UploadsAdapter(uploadsIntent: UploadsViewIntent) : PagingDataAdapter<Uploa
         }
 
     }
+
+
+}
+
+class UploadItemClickListener(val clickListener: (upload: UploadsModel) -> Unit) {
+    fun onClick(upload: UploadsModel) = clickListener(upload)
 }
 
 

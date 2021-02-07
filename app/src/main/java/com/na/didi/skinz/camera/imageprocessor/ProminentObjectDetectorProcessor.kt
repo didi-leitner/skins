@@ -23,15 +23,14 @@ import com.na.didi.skinz.camera.GraphicOverlay
 import com.na.didi.skinz.camera.SearchedObject
 import com.na.didi.skinz.data.model.Product
 import com.na.didi.skinz.objectdetection.*
-import com.na.didi.skinz.util.Event
 import com.na.didi.skinz.utils.BitmapUtils
 import com.na.didi.skinz.view.viewintent.CameraXViewIntent
 import java.io.IOException
 
-class ProminentObjectDetectorProcessor(cameraXViewIntent: CameraXViewIntent, graphicOverlay: GraphicOverlay) :
+class ProminentObjectDetectorProcessor(cameraStateListener: (cameraXViewIntent: CameraXViewIntent) -> Unit, graphicOverlay: GraphicOverlay) :
         FrameProcessorBase<List<DetectedObject>>() {
 
-    private val viewIntent = cameraXViewIntent
+    private val cameraStateListener = cameraStateListener
     private val objectDetector: ObjectDetector
     private val confirmationController: ObjectConfirmationController = ObjectConfirmationController(graphicOverlay)
     private val cameraReticleAnimator: CameraReticleAnimator = CameraReticleAnimator(graphicOverlay)
@@ -73,7 +72,8 @@ class ProminentObjectDetectorProcessor(cameraXViewIntent: CameraXViewIntent, gra
         val hasValidObjects = objects.isNotEmpty()
         if (!hasValidObjects) {
             confirmationController.reset()
-            viewIntent.onNothingFoundInFrame.value = Event(true)
+            cameraStateListener(CameraXViewIntent.OnNothingFoundInFrame)
+            //viewIntent.onNothingFoundInFrame.value = Event(true)
         } else {
             val visionObject = objects[objectIndex]
             if (objectBoxOverlapsConfirmationReticle(graphicOverlay, visionObject)) {
@@ -87,7 +87,7 @@ class ProminentObjectDetectorProcessor(cameraXViewIntent: CameraXViewIntent, gra
                     if (originalBitmap != null) {
                         //viewIntent.onConfirmedDetectedObject.value = DetectedObjectInfo(visionObject, originalBitmap)
                         val detectedObjectInfo = DetectedObjectInfo(visionObject, originalBitmap)
-                        val textProcessor = TextRecognitionProcessor(viewIntent)
+                        val textProcessor = TextRecognitionProcessor()
                         val executor = ContextCompat.getMainExecutor(graphicOverlay.context)
 
                         textProcessor.detectTextInImage(InputImage.fromBitmap(detectedObjectInfo.getBitmap(), 0))
@@ -95,7 +95,7 @@ class ProminentObjectDetectorProcessor(cameraXViewIntent: CameraXViewIntent, gra
                                     Log.v(TAG, "detectTextInImage success ")
 
                                     val products = processTextInProducts(text)
-                                    viewIntent.onTextDetected.value = SearchedObject(detectedObjectInfo, products)
+                                    cameraStateListener(CameraXViewIntent.OnTextDetected(SearchedObject(detectedObjectInfo, products)))
 
 
                                 }
@@ -113,13 +113,13 @@ class ProminentObjectDetectorProcessor(cameraXViewIntent: CameraXViewIntent, gra
                     //   viewIntent.onConfirmedDetectedObject.value = DetectedObjectInfo(visionObject, originalBitmap)
 
                 } else {
-                    viewIntent.onConfirmingDetectedObject.value = Event(true)
+                    cameraStateListener(CameraXViewIntent.OnConfirmingDetectedObject)
                 }
 
             } else {
                 Log.v(TAG, "obj detected, user moved away")
                 confirmationController.reset()
-                viewIntent.onMovedAwayFromDetectedObject.value = Event(true)
+                cameraStateListener(CameraXViewIntent.OnMovedAwayFromDetectedObject)
             }
         }
 

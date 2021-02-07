@@ -42,12 +42,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name="com.na.didi.skinz.view.activity.CameraXLivePreviewActivity"
-            android:exported="false"
-            android:screenOrientation="portrait">
-        </activity>
-
     </application>
 
 </manifest>
