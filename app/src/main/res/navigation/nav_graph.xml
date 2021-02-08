@@ -21,7 +21,7 @@
 
     <fragment
         android:id="@+id/cameraFragment"
-        android:name="com.na.didi.skinz.view.activity.CameraXLivePreviewFragment"
+        android:name="com.na.didi.skinz.view.fragments.CameraXLivePreviewFragment"
         android:label="CameraFragment" />
 
 

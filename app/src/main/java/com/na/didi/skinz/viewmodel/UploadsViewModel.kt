@@ -27,7 +27,6 @@ class UploadsViewModel @ViewModelInject internal constructor(
         }
     }
 
-
     override fun bindViewIntents(coroutineScope: LifecycleCoroutineScope, viewIntentFlow: Flow<UploadsViewIntent>) {
         coroutineScope.launchWhenStarted {
             viewIntentFlow.collect {

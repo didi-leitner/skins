@@ -18,7 +18,7 @@ class BottomSheetScrimView(context: Context, attrs: AttributeSet) : View(context
     private val boxCornerRadius: Int
 
     private lateinit var srcThumbnailRect: RectF
-    private lateinit var thumbnailBitmap: Bitmap
+    private var thumbnailBitmap: Bitmap? = null
 
     private var thumbnailRect: RectF? = null
     private var downPercentInCollapsed: Float = 0f
@@ -51,6 +51,8 @@ class BottomSheetScrimView(context: Context, attrs: AttributeSet) : View(context
             slideOffset: Float,
             bottomSheet: View
     ) {
+        if(thumbnailBitmap == null)
+            return
 
         val currentSheetHeight: Float
         if (slideOffset < 0) {
@@ -61,16 +63,22 @@ class BottomSheetScrimView(context: Context, attrs: AttributeSet) : View(context
             currentSheetHeight = collapsedStateHeight + (bottomSheet.height - collapsedStateHeight) * slideOffset
         }
 
-        thumbnailRect = RectF().apply {
-            val thumbnailWidth =
-                    thumbnailBitmap.width.toFloat() / thumbnailBitmap.height.toFloat() * thumbnailHeight.toFloat()
-            left = thumbnailMargin.toFloat()
-            top = height.toFloat() - currentSheetHeight - thumbnailMargin.toFloat() - thumbnailHeight.toFloat()
-            right = left + thumbnailWidth
-            bottom = top + thumbnailHeight
+        thumbnailBitmap?.let {
+            thumbnailRect = RectF().apply {
+                val thumbnailWidth =
+                        it.width.toFloat() / it.height.toFloat() * thumbnailHeight.toFloat()
+                left = thumbnailMargin.toFloat()
+                top = height.toFloat() - currentSheetHeight - thumbnailMargin.toFloat() - thumbnailHeight.toFloat()
+                right = left + thumbnailWidth
+                bottom = top + thumbnailHeight
+
+                invalidate()
+
+            }
         }
 
-        invalidate()
+
+
     }
 
     /**
@@ -117,7 +125,7 @@ class BottomSheetScrimView(context: Context, attrs: AttributeSet) : View(context
         invalidate()
     }
 
-    fun getThumbnailBitmap(): Bitmap = thumbnailBitmap
+    fun getThumbnailBitmap(): Bitmap? = thumbnailBitmap
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)

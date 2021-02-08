@@ -1,6 +1,7 @@
 package com.na.didi.skinz.view.fragments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -23,9 +24,16 @@ abstract class BaseFragmentMVI<S, E, I> : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
+        Log.v("UUU","onActivityCreated " + viewModel + " " + viewModel.state)
+
         lifecycleScope.launchWhenStarted {
             viewModel.state.collect {
-                renderState(it)
+
+                Log.v("UUUU","collcted state " + it)
+                it?.let {
+                    renderState(it)
+
+                }
             }
         }
 

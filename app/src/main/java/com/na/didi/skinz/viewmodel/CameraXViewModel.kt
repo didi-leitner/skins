@@ -4,71 +4,59 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.hilt.lifecycle.ViewModelInject
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.viewModelScope
 import com.na.didi.skinz.data.model.Product
 import com.na.didi.skinz.data.repository.ProductsRepo
 import com.na.didi.skinz.utils.BitmapUtils
-import com.na.didi.skinz.view.viewcontract.CameraXPreviewViewContract
-import com.na.didi.skinz.view.viewintent.CameraXViewIntent
+import com.na.didi.skinz.view.viewintent.CameraViewIntent
+import com.na.didi.skinz.view.viewstate.CameraViewEffect
 import com.na.didi.skinz.view.viewstate.CameraViewState
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
 class CameraXViewModel @ViewModelInject internal constructor(
-        productsRepo: ProductsRepo
-) : ViewModel() {
-
-    private val productsRepo: ProductsRepo = productsRepo
-    private val cameraViewState = MutableStateFlow<CameraViewState>(CameraViewState.Idle())
+        val productsRepo: ProductsRepo
+) : BaseViewModel<CameraViewState, CameraViewEffect, CameraViewIntent>() {
 
 
     var isCameraLive = false
-        private set
 
+    override fun bindViewIntents(coroutineScope: LifecycleCoroutineScope, viewItents: Flow<CameraViewIntent>) {
 
-    fun bindViewIntents(viewContract: CameraXPreviewViewContract) {
-
-        viewModelScope.launch {
-
-            cameraViewState.filterNotNull().collect {
-                Log.v("TAGGG", "collect state, render " + it)
-                viewContract.render(it)
-            }
-            Log.v("TAGGG", "onEach, after collect call")
-
-        }
-
-        viewModelScope.launch {
-            viewContract.viewIntentFlow().collect {
+        coroutineScope.launch {
+            viewItents.collect {
+                Log.v("uuu","cam view intent collected " + it)
 
                 when (it) {
-                    CameraXViewIntent.OnBottomSheetHidden -> CameraViewState.Detecting()
-                    CameraXViewIntent.OnNothingFoundInFrame ->
-                        cameraViewState.value = CameraViewState.Detecting()
+                    is CameraViewIntent.StartDetecting ->{
+                        _state.value = CameraViewState.Detecting
+                    }
+                    is CameraViewIntent.OnPointCameraToDetectedObject ->
+                        _state.value = CameraViewState.Confirming
 
-                    CameraXViewIntent.OnMovedAwayFromDetectedObject ->
-                        cameraViewState.value = CameraViewState.Detected()
+                    is CameraViewIntent.OnMovedAwayFromDetectedObject ->
+                        _state.value = CameraViewState.Detected
 
-                    is CameraXViewIntent.OnConfirmedDetectedObjec ->
-                        cameraViewState.value = CameraViewState.Searching(it.detectedObjectInfo!!)
+                    is CameraViewIntent.OnConfirmedDetectedObject ->
+                        _state.value = CameraViewState.Searching(it.detectedObjectInfo!!)
 
-                    CameraXViewIntent.OnConfirmingDetectedObject ->
-                        cameraViewState.value = CameraViewState.Confirming()
+                    is CameraViewIntent.OnTextDetected ->
+                        _state.value = CameraViewState.Searched(it.searchedObject)
 
-                    is CameraXViewIntent.OnTextDetected ->
-                        cameraViewState.value = CameraViewState.Searched(it.searchedObject)
+                    is CameraViewIntent.OnProductClickedInBottomSheet -> {
+                        //TODO check if ingr are to be found
+                        //pos -> addProducts
+                        //neg -> askForIngredients
+                        _state.value = CameraViewState.SearchedProductConfirmed(it.product)
 
-                    is CameraXViewIntent.OnProductClicked ->
-                        cameraViewState.value = CameraViewState.SearchedProductConfirmed(it.product)
+                    }
 
-                    is CameraXViewIntent.AddProduct -> addProduct(it.context, it.bitmap, it.product)
-
+                    is CameraViewIntent.AddProduct -> addProduct(it.context, it.bitmap, it.product)
                 }
             }
         }
@@ -89,21 +77,15 @@ class CameraXViewModel @ViewModelInject internal constructor(
                 }
                 productsRepo.insertProduct(product)
 
-                cameraViewState.value = CameraViewState.ProductAdded()
+                _state.value = CameraViewState.ProductAdded
             }
         }
     }
 
 
-    fun markCameraLive() {
-        isCameraLive = true
-        cameraViewState.value = CameraViewState.Detecting()
-
-    }
-
     fun markCameraFrozen() {
-        isCameraLive = false
-        cameraViewState.value = CameraViewState.Idle()
+        Log.v("UUU","markFroz")
+
 
     }
 

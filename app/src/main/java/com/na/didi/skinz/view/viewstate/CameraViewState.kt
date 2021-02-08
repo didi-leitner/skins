@@ -16,15 +16,19 @@ import com.na.didi.skinz.data.model.Product
 
 sealed class CameraViewState {
 
-    class Idle(): CameraViewState()
-    class Detecting() : CameraViewState()
-    class Detected() : CameraViewState()
-    class Confirming(): CameraViewState()
-    class Confirmed(): CameraViewState()
+    object Idle: CameraViewState()
+    object Detecting : CameraViewState()
+    object Detected : CameraViewState()
+    object Confirming: CameraViewState()
+    object Confirmed: CameraViewState()
     data class Searching(val detectedObjectInfo: DetectedObjectInfo): CameraViewState()
     data class Searched(val searchedObject: SearchedObject) : CameraViewState()
     data class SearchedProductConfirmed(val product: Product) : CameraViewState()
-    class ProductAdded() : CameraViewState()
+    object ProductAdded : CameraViewState()
 
+
+}
+
+sealed class CameraViewEffect {
 
 }

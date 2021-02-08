@@ -1,10 +1,11 @@
-package com.na.didi.skinz.view.activity
+package com.na.didi.skinz.view.fragments
 
 
 import android.animation.AnimatorInflater
 import android.animation.AnimatorSet
 import android.content.Context
 import android.content.pm.PackageManager
+import android.hardware.display.DisplayManager
 import android.os.Build.VERSION_CODES
 import android.os.Bundle
 import android.util.DisplayMetrics
@@ -19,7 +20,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -28,55 +28,51 @@ import com.google.android.gms.common.annotation.KeepName
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.chip.Chip
 import com.google.common.collect.ImmutableList
-import com.google.mlkit.common.MlKitException
 import com.na.didi.skinz.R
 import com.na.didi.skinz.camera.GraphicOverlay
-import com.na.didi.skinz.camera.imageprocessor.ProminentObjectDetectorProcessor
+import com.na.didi.skinz.camera.ImageProcessor
 import com.na.didi.skinz.databinding.FragmentCameraBinding
 import com.na.didi.skinz.view.adapters.BottomSheetProductAdapter
 import com.na.didi.skinz.view.adapters.ProductPreviewClickListener
 import com.na.didi.skinz.view.custom.BottomSheetScrimView
-import com.na.didi.skinz.view.viewcontract.CameraXPreviewViewContract
-import com.na.didi.skinz.view.viewintent.CameraXViewIntent
+import com.na.didi.skinz.view.viewintent.CameraViewIntent
+import com.na.didi.skinz.view.viewstate.CameraViewEffect
 import com.na.didi.skinz.view.viewstate.CameraViewState
 import com.na.didi.skinz.viewmodel.CameraXViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import java.io.IOException
 import java.util.*
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+/** Helper type alias used for analysis use case callbacks */
+typealias CameraViewFromAnalysisIntentListener = (cameraViewIntent: CameraViewIntent) -> Unit
 
 @KeepName
 @RequiresApi(VERSION_CODES.LOLLIPOP)
 @AndroidEntryPoint
 class CameraXLivePreviewFragment :
-        Fragment(),
+        BaseFragmentMVI<CameraViewState, CameraViewEffect, CameraViewIntent>(),
         ActivityCompat.OnRequestPermissionsResultCallback,
-        View.OnClickListener,
-        CameraXPreviewViewContract {
+        View.OnClickListener {
 
-    private val cameraXViewModel: CameraXViewModel by viewModels()
-    private val viewIntentChannel = Channel<CameraXViewIntent>(Channel.CONFLATED)
+    override val viewModel: CameraXViewModel by viewModels()
+    private var displayId: Int = -1
 
     private var cameraProvider: ProcessCameraProvider? = null
 
-    private var analysisUseCase: ImageAnalysis? = null
-    private var previewUseCase: Preview? = null
+    private val displayManager by lazy {
+        requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+    }
 
-    private var prominentObjectImageProcessor: ProminentObjectDetectorProcessor? = null
+    /** Blocking camera operations are performed using this executor */
+    private lateinit var cameraExecutor: ExecutorService
 
     private lateinit var graphicOverlay: GraphicOverlay
-    private lateinit var cameraSelector: CameraSelector
     private lateinit var previewView: PreviewView
 
-    private var needUpdateGraphicOverlayImageSourceInfo = false
-
-    private var selectedModel = OBJECT_DETECTION
     private var lensFacing = CameraSelector.LENS_FACING_BACK
 
 
@@ -93,17 +89,44 @@ class CameraXLivePreviewFragment :
     private var bottomSheetTitleView: TextView? = null
     private var slidingSheetUpFromHiddenState: Boolean = false
 
+    /**
+     * We need a display listener for orientation changes that do not trigger a configuration
+     * change, for example if we choose to override config change in manifest or for 180-degree
+     * orientation changes.
+     */
+    private val displayListener = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) = Unit
+        override fun onDisplayRemoved(displayId: Int) = Unit
+        override fun onDisplayChanged(displayId: Int) = view?.let { view ->
+            if (displayId == this@CameraXLivePreviewFragment.displayId) {
+                Log.d(TAG, "Rotation changed: ${view.display.rotation}")
+
+/*
+                val isImageFlipped =
+                        lensFacing == CameraSelector.LENS_FACING_FRONT
+                val rotationDegrees = view.display.rotation
+                if (rotationDegrees == 0 || rotationDegrees == 180) {
+                    graphicOverlay.setImageSourceInfo(
+                            imageProxy.width, imageProxy.height, isImageFlipped
+                    )
+                } else {
+                    graphicOverlay.setImageSourceInfo(
+                            imageProxy.height, imageProxy.width, isImageFlipped
+                    )
+                }
+
+
+                imageAnalyzer?.targetRotation = view.display.rotation*/
+            }
+        } ?: Unit
+    }
+
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View {
 
         if (savedInstanceState != null) {
-            selectedModel =
-                    savedInstanceState.getString(
-                            STATE_SELECTED_MODEL,
-                            OBJECT_DETECTION
-                    )
             lensFacing =
                     savedInstanceState.getInt(
                             STATE_LENS_FACING,
@@ -112,11 +135,10 @@ class CameraXLivePreviewFragment :
         }
         val binding = FragmentCameraBinding.inflate(inflater, container, false)
 
-
         previewView = binding.cameraPreview
-        graphicOverlay = binding.cameraPreviewOverlay.cameraPreviewGraphicOverlay.apply {
-            setOnClickListener(this@CameraXLivePreviewFragment)
-        }
+        //displayId = previewView.display.displayId
+
+        graphicOverlay = binding.cameraPreviewOverlay.cameraPreviewGraphicOverlay
 
         promptChip = binding.cameraPreviewOverlay.bottomPromptChip
         promptChipAnimator =
@@ -127,172 +149,87 @@ class CameraXLivePreviewFragment :
 
         setUpBottomSheet(binding)
 
-        binding.topActionBar.closeButton.setOnClickListener(this)
-
-        flashButton = binding.topActionBar.flashButton.apply {
-            setOnClickListener(this@CameraXLivePreviewFragment)
-        }
-        settingsButton = binding.topActionBar.settingsButton.apply {
-            setOnClickListener(this@CameraXLivePreviewFragment)
-        }
 
 
-        cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
-        setupCameraProvider()
-        cameraXViewModel.bindViewIntents(this@CameraXLivePreviewFragment)
-
+        binding.topActionBar.topBarClickListener = this@CameraXLivePreviewFragment
 
         if (!allPermissionsGranted()) {
             runtimePermissions
         }
 
         return binding.root
-
-
     }
 
 
     override fun onSaveInstanceState(bundle: Bundle) {
         super.onSaveInstanceState(bundle)
-        bundle.putString(STATE_SELECTED_MODEL, selectedModel)
         bundle.putInt(STATE_LENS_FACING, lensFacing)
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        cameraExecutor = Executors.newSingleThreadExecutor()
 
-    override fun onResume() {
-        super.onResume()
+        // Every time the orientation of device changes, update rotation for use cases
+        //displayManager.registerDisplayListener(displayListener, null)
 
-        cameraXViewModel.markCameraFrozen()
-        bindAllCameraUseCases()
-        cameraXViewModel.markCameraLive()
+        setupCamera()
+    }
+
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        cameraExecutor.shutdown()
+        //displayManager.unregisterDisplayListener(displayListener)
 
     }
 
-    override fun onPause() {
-        super.onPause()
+    //preview and analysis usecases
+    private fun bindCameraUseCases() {
 
-        prominentObjectImageProcessor?.run {
-            this.stop()
-        }
+        //val rotation = viewFinder.display.rotation
+        val cameraProvider = cameraProvider
+                ?: throw IllegalStateException("Camera initialization failed.")
 
-        cameraXViewModel.markCameraFrozen()
+        val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
 
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-
-        prominentObjectImageProcessor?.run {
-            this.stop()
-        }
-
-    }
-
-    private fun bindAnalysisUseCase() {
-        if (cameraProvider != null) {
-
-            if(analysisUseCase != null)
-                cameraProvider!!.unbind(analysisUseCase)
-
-            if (prominentObjectImageProcessor != null) {
-                prominentObjectImageProcessor!!.stop()
-            }
-
-
-            prominentObjectImageProcessor = ProminentObjectDetectorProcessor({
-                lifecycleScope.launch{
-                    viewIntentChannel.send(it)
-                }
-            } , graphicOverlay)
-
-
-            needUpdateGraphicOverlayImageSourceInfo = true
-
-            val metrics = DisplayMetrics().also { previewView.display.getRealMetrics(it) }
-            Log.d(TAG, "Screen metrics: ${metrics.widthPixels} x ${metrics.heightPixels}")
-            val screenAspectRatio = aspectRatio(metrics.widthPixels, metrics.heightPixels)
-
-            val builder = ImageAnalysis.Builder()
-            builder.setTargetAspectRatio(screenAspectRatio)
-            analysisUseCase = builder.build()
-            analysisUseCase?.setAnalyzer(
-                    ContextCompat.getMainExecutor(requireContext()),
-                    { imageProxy: ImageProxy ->
-
-                        if (needUpdateGraphicOverlayImageSourceInfo) {
-                            val isImageFlipped =
-                                    lensFacing == CameraSelector.LENS_FACING_FRONT
-                            val rotationDegrees =
-                                    imageProxy.imageInfo.rotationDegrees
-                            if (rotationDegrees == 0 || rotationDegrees == 180) {
-                                graphicOverlay.setImageSourceInfo(
-                                        imageProxy.width, imageProxy.height, isImageFlipped
-                                )
-                            } else {
-                                graphicOverlay.setImageSourceInfo(
-                                        imageProxy.height, imageProxy.width, isImageFlipped
-                                )
-                            }
-                            needUpdateGraphicOverlayImageSourceInfo = false
-                        }
-
-                        try {
-                            Log.v(TAG,"will call processImageProxy")
-                            // imageProcessor.processImageProxy will use another thread to run the detection underneath,
-                            prominentObjectImageProcessor!!.processImageProxy(imageProxy, graphicOverlay)
-                        } catch (e: MlKitException) {
-                            Log.e(
-                                    TAG,
-                                    "Failed to process image. Error: " + e.localizedMessage
-                            )
-                            Toast.makeText(
-                                    requireContext(),
-                                    e.localizedMessage,
-                                    Toast.LENGTH_SHORT
-                            )
-                                    .show()
-                        }
-
-                        needUpdateGraphicOverlayImageSourceInfo = true
-
-                    })
-
-            Log.v(TAG, "calling bindToLifecycle " + cameraSelector + " " + analysisUseCase)
-
-            cameraProvider!!.bindToLifecycle(this, cameraSelector!!, analysisUseCase)
-        }
-    }
-
-    private fun bindPreviewUseCase() {
-
-        if (cameraProvider == null) {
-            return
-        }
-        if (previewUseCase != null) {
-            cameraProvider!!.unbind(previewUseCase)
-        }
-
-        // Get screen metrics used to setup camera for full screen resolution
         val metrics = DisplayMetrics().also { previewView.display.getRealMetrics(it) }
         val screenAspectRatio = aspectRatio(metrics.widthPixels, metrics.heightPixels)
 
 
-        val builder = Preview.Builder()
-        builder.setTargetAspectRatio(screenAspectRatio)
-        previewUseCase = builder.build()
-        previewUseCase!!.setSurfaceProvider(previewView.getSurfaceProvider())
+        //Camera live preview
+        val preview = Preview.Builder()
+                //.setTargetRotation(rotation)
+                .setTargetAspectRatio(screenAspectRatio)
+                .build()
+                .also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
 
-        cameraProvider!!.bindToLifecycle(/* lifecycleOwner= */this, cameraSelector!!, previewUseCase)
+        // ImageAnalysis
+        val imageAnalyzer = ImageAnalysis.Builder()
+                .setTargetAspectRatio(screenAspectRatio)
+                //.setTargetRotation(rotation)
+                .build()
+                .also {
+                    it.setAnalyzer(cameraExecutor, ImageProcessor(graphicOverlay){ intentFromProcessor ->
+                        lifecycleScope.launch {
+                            viewIntentChannel.send(intentFromProcessor)
+                        }
+                    })
 
-        previewUseCase!!.setSurfaceProvider(previewView.getSurfaceProvider())
+                }
 
+        //must unbind use-cases before rebinding them
+        cameraProvider.unbindAll()
+        try {
+            cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
+        } catch (exc: Exception) {
+            Log.e(TAG, "Use case binding failed", exc)
+        }
     }
 
 
-    private fun bindAllCameraUseCases() {
-        bindPreviewUseCase()
-        bindAnalysisUseCase()
-    }
 
     private val requiredPermissions: Array<String?>
         get() = try {
@@ -341,7 +278,9 @@ class CameraXLivePreviewFragment :
     ) {
         Log.i(TAG, "Permission granted!")
         if (allPermissionsGranted()) {
-            startCameraPreview()
+            lifecycleScope.launch {
+                viewIntentChannel.send(CameraViewIntent.StartDetecting)
+            }
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
@@ -350,7 +289,10 @@ class CameraXLivePreviewFragment :
         when (view.id) {
 
             R.id.bottom_sheet_scrim_view -> bottomSheetBehavior?.setState(BottomSheetBehavior.STATE_HIDDEN)
-            R.id.close_button -> TODO()
+            R.id.close_button -> {
+                //TODO
+                Log.v("TAGGG", "TODO close")
+            }
             R.id.flash_button -> {
                 if (flashButton?.isSelected == true) {
                     flashButton?.isSelected = false
@@ -365,30 +307,20 @@ class CameraXLivePreviewFragment :
         }
     }
 
-    private fun startCameraPreview() {
-        if (!cameraXViewModel.isCameraLive) {
-            try {
-                bindAllCameraUseCases()
-                cameraXViewModel.markCameraLive()
-            } catch (e: IOException) {
-                Log.e(TAG, "Failed to start camera preview!", e)
-            }
-        }
-    }
+
 
     private fun stopCameraPreview() {
-        //TODO
-        if (cameraXViewModel?.isCameraLive == true) {
-            cameraXViewModel!!.markCameraFrozen()
-            flashButton?.isSelected = false
-            cameraProvider?.unbindAll()
-        }
+        viewModel.markCameraFrozen()
+        //TODO stop imageProcessor explicitly needed?
+        cameraProvider?.unbindAll()
+
+
     }
 
     private fun setUpBottomSheet(binding: FragmentCameraBinding) {
 
-        //binding.bottomSheet
-        bottomSheetBehavior = BottomSheetBehavior.from(binding.bottomSheetContainer)
+        bottomSheetBehavior = BottomSheetBehavior.from(binding.bottomSheet)
+        Log.v(TAG, "setupBS " + bottomSheetBehavior)
         bottomSheetBehavior?.addBottomSheetCallback(
                 object : BottomSheetBehavior.BottomSheetCallback() {
                     override fun onStateChanged(bottomSheet: View, newState: Int) {
@@ -400,7 +332,7 @@ class CameraXLivePreviewFragment :
                         when (newState) {
                             BottomSheetBehavior.STATE_HIDDEN -> {
                                 lifecycleScope.launch {
-                                    viewIntentChannel.send(CameraXViewIntent.OnBottomSheetHidden)
+                                    viewIntentChannel.send(CameraViewIntent.StartDetecting)
                                 }
                             }
                             BottomSheetBehavior.STATE_COLLAPSED,
@@ -413,9 +345,11 @@ class CameraXLivePreviewFragment :
 
                     override fun onSlide(bottomSheet: View, slideOffset: Float) {
 
+                        Log.v(TAG, "onSliiide")
                         if (java.lang.Float.isNaN(slideOffset)) {
                             return
                         }
+
 
                         val bottomSheetBehavior = bottomSheetBehavior ?: return
                         val collapsedStateHeight = bottomSheetBehavior.peekHeight.coerceAtMost(bottomSheet.height)
@@ -438,21 +372,24 @@ class CameraXLivePreviewFragment :
         }
 
 
-        bottomSheetTitleView = binding.bottomSheet.bottomSheetTitle
-        productRecyclerView = binding.bottomSheet.productRecyclerView.apply {
+        // bottomSheetTitleView = binding.bottomSheet.
+        productRecyclerView = binding.bottomSheetIncluded.productRecyclerView.apply {
             setHasFixedSize(true)
             layoutManager = LinearLayoutManager(requireContext())
 
-            val clickListener = ProductPreviewClickListener{
+            val clickListener = ProductPreviewClickListener {
                 lifecycleScope.launch {
-                    viewIntentChannel.send(CameraXViewIntent.OnProductClicked(it))
+                    viewIntentChannel.send(CameraViewIntent.OnProductClickedInBottomSheet(it))
                 }
             }
             adapter = BottomSheetProductAdapter(ImmutableList.of(), clickListener)
         }
     }
 
-    private fun setupCameraProvider() {
+    private fun setupCamera() {
+
+        //viewModel.markCameraFrozen()
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
         cameraProviderFuture.addListener(Runnable
         {
@@ -460,23 +397,114 @@ class CameraXLivePreviewFragment :
             cameraProvider = cameraProviderFuture.get()
 
             if (allPermissionsGranted()) {
-                Log.v(TAG, "Bind all camera usecases from camPRvoderFuture")
-                bindAllCameraUseCases()
+                bindCameraUseCases()
+
             }
 
         }, ContextCompat.getMainExecutor(requireContext()))
     }
 
 
+    override fun renderState(state: CameraViewState) {
+
+        val wasPromptChipGone = promptChip!!.visibility == View.GONE
+
+        Log.v(TAG, "renderState " + state)
+        searchProgressBar?.visibility = View.GONE
+        when (state) {
+            is CameraViewState.Idle -> {
+                stopCameraPreview()
+            }
+            is CameraViewState.Detecting -> {
+
+                //setupCamera()
+                //startCameraPreview()
+
+                settingsButton?.isEnabled = true
+                bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
+
+                promptChip?.visibility = View.VISIBLE
+                promptChip?.setText(R.string.prompt_point_at_an_object)
+
+            }
+            is CameraViewState.Detected -> {
+                promptChip?.visibility = View.VISIBLE
+                promptChip?.setText(R.string.prompt_point_at_an_object)
+                //startCameraPreview()
+            }
+            is CameraViewState.Confirming -> {
+                promptChip?.visibility = View.VISIBLE
+                promptChip?.setText(R.string.prompt_hold_camera_steady)
+                //startCameraPreview()
+            }
+            is CameraViewState.Confirmed -> {
+                promptChip?.visibility = View.VISIBLE
+                promptChip?.setText(R.string.prompt_searching)
+                stopCameraPreview()
+            }
+            is CameraViewState.Searching -> {
+                searchProgressBar?.visibility = View.VISIBLE
+                promptChip?.visibility = View.VISIBLE
+                promptChip?.setText(R.string.prompt_searching)
+                stopCameraPreview()
+            }
+            is CameraViewState.Searched -> {
+                promptChip?.visibility = View.GONE
+                stopCameraPreview()
+
+                val searchedObject = state.searchedObject
+
+                val productList = searchedObject.productList
+                bottomSheetScrimView?.updateThumbnail(searchedObject.getObjectThumbnail(resources))
+                bottomSheetScrimView?.updateSrcThumb(graphicOverlay.translateRect(searchedObject.boundingBox))
+
+                bottomSheetTitleView?.text = resources
+                        .getQuantityString(
+                                R.plurals.bottom_sheet_title, productList.size, productList.size
+                        )
+                val clickListener = ProductPreviewClickListener {
+                    lifecycleScope.launch {
+                        viewIntentChannel.send(CameraViewIntent.OnProductClickedInBottomSheet(it))
+                    }
+                }
+                productRecyclerView?.adapter = BottomSheetProductAdapter(productList, clickListener)
+                slidingSheetUpFromHiddenState = true
+                bottomSheetBehavior?.peekHeight = previewView.height?.div(2) ?: BottomSheetBehavior.PEEK_HEIGHT_AUTO
+                bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
+            }
+
+            is CameraViewState.SearchedProductConfirmed -> {
+
+                lifecycleScope.launch {
+                    //TOODO inject Context in BitmapUtils
+                    viewIntentChannel.send(CameraViewIntent.AddProduct(requireContext(), bottomSheetScrimView?.getThumbnailBitmap(), state.product))
+
+                }
+
+            }
+
+            is CameraViewState.ProductAdded -> {
+                //TODO nav event
+                //finish()
+                bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
+            }
+
+        }
+
+        val shouldPlayPromptChipEnteringAnimation = wasPromptChipGone && promptChip?.visibility == View.VISIBLE
+        if (shouldPlayPromptChipEnteringAnimation && promptChipAnimator?.isRunning == false) {
+            promptChipAnimator?.start()
+        }
+    }
+
+    override fun renderEffect(effect: CameraViewEffect) {
+        TODO("Not yet implemented")
+    }
+
     companion object {
         private const val TAG = "CameraXLivePreview"
         private const val PERMISSION_REQUESTS = 1
 
-        private const val OBJECT_DETECTION = "Object Detection"
-        private const val FACE_DETECTION = "Face Detection"
-        private const val TEXT_RECOGNITION = "Text Recognition"
-
-        private const val STATE_SELECTED_MODEL = "selected_model"
         private const val STATE_LENS_FACING = "lens_facing"
 
         private const val RATIO_4_3_VALUE = 4.0 / 3.0
@@ -506,128 +534,7 @@ class CameraXLivePreviewFragment :
 
     }
 
-
-    override fun viewIntentFlow() = viewIntentChannel.receiveAsFlow().filterNotNull()
-
-    override fun render(cameraViewState: CameraViewState) {
-
-        val wasPromptChipGone = promptChip!!.visibility == View.GONE
-
-        searchProgressBar?.visibility = View.GONE
-        when(cameraViewState) {
-            is CameraViewState.Idle -> {
-
-            }
-            is CameraViewState.Detecting -> {
-
-                settingsButton?.isEnabled = true
-                bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
-
-                promptChip?.visibility = View.VISIBLE
-                promptChip?.setText(R.string.prompt_point_at_an_object)
-                startCameraPreview()
-            }
-            is CameraViewState.Detected -> {
-                promptChip?.visibility = View.VISIBLE
-                promptChip?.setText(R.string.prompt_point_at_an_object)
-                //startCameraPreview()
-            }
-            is CameraViewState.Confirming -> {
-                promptChip?.visibility = View.VISIBLE
-                promptChip?.setText(R.string.prompt_hold_camera_steady)
-                //startCameraPreview()
-            }
-            is CameraViewState.Confirmed -> {
-                promptChip?.visibility = View.VISIBLE
-                promptChip?.setText(R.string.prompt_searching)
-                stopCameraPreview()
-            }
-            is CameraViewState.Searching -> {
-                searchProgressBar?.visibility = View.VISIBLE
-                promptChip?.visibility = View.VISIBLE
-                promptChip?.setText(R.string.prompt_searching)
-                stopCameraPreview()
-            }
-            is CameraViewState.Searched -> {
-                promptChip?.visibility = View.GONE
-                stopCameraPreview()
-
-                val searchedObject = cameraViewState.searchedObject
-
-                val productList = searchedObject.productList
-                bottomSheetScrimView?.updateThumbnail(searchedObject.getObjectThumbnail(resources))
-                bottomSheetScrimView?.updateSrcThumb(graphicOverlay.translateRect(searchedObject.boundingBox))
-
-                bottomSheetTitleView?.text = resources
-                        .getQuantityString(
-                                R.plurals.bottom_sheet_title, productList.size, productList.size
-                        )
-                val clickListener = ProductPreviewClickListener{
-                    lifecycleScope.launch {
-                        viewIntentChannel.send(CameraXViewIntent.OnProductClicked(it))
-                    }
-                }
-                productRecyclerView?.adapter = BottomSheetProductAdapter(productList, clickListener)
-                slidingSheetUpFromHiddenState = true
-                bottomSheetBehavior?.peekHeight = previewView.height?.div(2) ?: BottomSheetBehavior.PEEK_HEIGHT_AUTO
-                bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
-            }
-
-            is CameraViewState.SearchedProductConfirmed -> {
-
-                lifecycleScope.launch {
-                    //TOODO inject Context in BitmapUtils
-                    viewIntentChannel.send(CameraXViewIntent.AddProduct(requireContext(), bottomSheetScrimView?.getThumbnailBitmap(), cameraViewState.product))
-
-                }
-
-            }
-
-            is CameraViewState.ProductAdded -> {
-                //TODO nav event
-                //finish()
-                //bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
-            }
-
-        }
-
-
-        /*when (cameraViewState) {
-            CameraViewState.Detecting, CameraViewState.DETECTED, CameraViewState.CONFIRMING -> {
-                promptChip?.visibility = View.VISIBLE
-                promptChip?.setText(
-                        if (cameraViewState == CameraViewState.CONFIRMING)
-                            R.string.prompt_hold_camera_steady
-                        else
-                            R.string.prompt_point_at_an_object
-                )
-                startCameraPreview()
-            }
-            CameraViewState.CONFIRMED -> {
-                promptChip?.visibility = View.VISIBLE
-                promptChip?.setText(R.string.prompt_searching)
-                stopCameraPreview()
-            }
-            CameraViewState.SEARCHING -> {
-                searchProgressBar?.visibility = View.VISIBLE
-                promptChip?.visibility = View.VISIBLE
-                promptChip?.setText(R.string.prompt_searching)
-                stopCameraPreview()
-            }
-            CameraViewState.SEARCHED -> {
-                promptChip?.visibility = View.GONE
-                stopCameraPreview()
-            }
-            else -> promptChip?.visibility = View.GONE
-        }*/
-
-        val shouldPlayPromptChipEnteringAnimation = wasPromptChipGone && promptChip?.visibility == View.VISIBLE
-        if (shouldPlayPromptChipEnteringAnimation && promptChipAnimator?.isRunning == false) {
-            promptChipAnimator?.start()
-        }
-    }
-
-
-
 }
+
+
 

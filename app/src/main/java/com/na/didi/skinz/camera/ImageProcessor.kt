@@ -1,4 +1,4 @@
-package com.na.didi.skinz.camera.imageprocessor
+package com.na.didi.skinz.camera
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
@@ -7,9 +7,11 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.core.content.ContextCompat
 import com.google.android.gms.tasks.Task
+import com.google.mlkit.common.MlKitException
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.objects.DetectedObject
 import com.google.mlkit.vision.objects.ObjectDetection
@@ -18,18 +20,19 @@ import com.google.mlkit.vision.objects.ObjectDetectorOptionsBase
 import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
 import com.google.mlkit.vision.text.Text
 import com.na.didi.skinz.R
-import com.na.didi.skinz.camera.DetectedObjectInfo
-import com.na.didi.skinz.camera.GraphicOverlay
-import com.na.didi.skinz.camera.SearchedObject
+import com.na.didi.skinz.camera.imageprocessor.TextRecognitionProcessor
 import com.na.didi.skinz.data.model.Product
 import com.na.didi.skinz.objectdetection.*
 import com.na.didi.skinz.utils.BitmapUtils
+import com.na.didi.skinz.view.fragments.CameraViewFromAnalysisIntentListener
 import com.na.didi.skinz.view.viewintent.CameraViewIntent
 import java.io.IOException
 
-class ProminentObjectDetectorProcessor(val cameraStateListener: (cameraXViewIntent: CameraViewIntent) -> Unit, val graphicOverlay: GraphicOverlay) {
+
+class ImageProcessor(val graphicOverlay: GraphicOverlay, val cameraIntentListener: CameraViewFromAnalysisIntentListener) : ImageAnalysis.Analyzer {
 
     private val objectDetector: ObjectDetector
+
     private val confirmationController: ObjectConfirmationController = ObjectConfirmationController(graphicOverlay)
     private val cameraReticleAnimator: CameraReticleAnimator = CameraReticleAnimator(graphicOverlay)
     private val reticleOuterRingRadius: Int = graphicOverlay
@@ -48,6 +51,17 @@ class ProminentObjectDetectorProcessor(val cameraStateListener: (cameraXViewInte
         this.objectDetector = ObjectDetection.getClient(options)
     }
 
+    override fun analyze(imageProxy: ImageProxy) {
+        try {
+            // imageProcessor.processImageProxy will use another thread to run the detection underneath,
+            processImageProxy(imageProxy)
+        } catch (e: MlKitException) {
+            Log.e(TAG, "Failed to process image. Error: " + e.localizedMessage)
+
+        }
+    }
+
+
     fun stop() {
         try {
             objectDetector.close()
@@ -62,8 +76,7 @@ class ProminentObjectDetectorProcessor(val cameraStateListener: (cameraXViewInte
 
     private fun onObjectDetected(
             originalBitmap: Bitmap?,
-            results: List<DetectedObject>,
-            graphicOverlay: GraphicOverlay
+            results: List<DetectedObject>
     ) {
         var objects = results
         Log.v(TAG, "onSuccess in ProminentObjDetProcessor, " + " " + results.size)
@@ -72,7 +85,7 @@ class ProminentObjectDetectorProcessor(val cameraStateListener: (cameraXViewInte
         val hasValidObjects = objects.isNotEmpty()
         if (!hasValidObjects) {
             confirmationController.reset()
-            cameraStateListener(CameraViewIntent.StartDetecting)
+            cameraIntentListener(CameraViewIntent.StartDetecting)
         } else {
             val visionObject = objects[objectIndex]
             if (objectBoxOverlapsConfirmationReticle(graphicOverlay, visionObject)) {
@@ -94,7 +107,7 @@ class ProminentObjectDetectorProcessor(val cameraStateListener: (cameraXViewInte
                                     Log.v(TAG, "detectTextInImage success ")
 
                                     val products = processTextInProducts(text)
-                                    cameraStateListener(CameraViewIntent.OnTextDetected(SearchedObject(detectedObjectInfo, products)))
+                                    cameraIntentListener(CameraViewIntent.OnTextDetected(SearchedObject(detectedObjectInfo, products)))
 
 
                                 }
@@ -112,13 +125,13 @@ class ProminentObjectDetectorProcessor(val cameraStateListener: (cameraXViewInte
                     //   viewIntent.onConfirmedDetectedObject.value = DetectedObjectInfo(visionObject, originalBitmap)
 
                 } else {
-                    cameraStateListener(CameraViewIntent.OnPointCameraToDetectedObject)
+                    cameraIntentListener(CameraViewIntent.OnPointCameraToDetectedObject)
                 }
 
             } else {
                 Log.v(TAG, "obj detected, user moved away")
                 confirmationController.reset()
-                cameraStateListener(CameraViewIntent.OnMovedAwayFromDetectedObject)
+                cameraIntentListener(CameraViewIntent.OnMovedAwayFromDetectedObject)
             }
         }
 
@@ -159,10 +172,8 @@ class ProminentObjectDetectorProcessor(val cameraStateListener: (cameraXViewInte
     @RequiresApi(Build.VERSION_CODES.KITKAT)
     fun processImageProxy(imageProxy: ImageProxy) {
 
-
         if (needUpdateGraphicOverlayImageSourceInfo) {
-            val rotationDegrees =
-                    imageProxy.imageInfo.rotationDegrees
+            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
             if (rotationDegrees == 0 || rotationDegrees == 180) {
                 graphicOverlay.setImageSourceInfo(imageProxy.width, imageProxy.height)
             } else {
@@ -170,11 +181,6 @@ class ProminentObjectDetectorProcessor(val cameraStateListener: (cameraXViewInte
             }
             needUpdateGraphicOverlayImageSourceInfo = false
         }
-
-        //Log.v(TAG,"processImageProxy method " + isShutdown)
-        //if (isShutdown) {
-        //    return
-        //}
 
         val originalCameraImage = BitmapUtils.getBitmap(imageProxy)
         val inputImage = InputImage.fromMediaImage(imageProxy.image!!, imageProxy.imageInfo.rotationDegrees)
@@ -184,7 +190,7 @@ class ProminentObjectDetectorProcessor(val cameraStateListener: (cameraXViewInte
                 .addOnSuccessListener(executor) { results ->
                     graphicOverlay.clear()
                     Log.v(TAG, "detectInImage success " + results + " " + imageProxy)
-                    onObjectDetected(originalCameraImage, results, graphicOverlay)
+                    onObjectDetected(originalCameraImage, results)
                     graphicOverlay.postInvalidate()
                 }
                 .addOnFailureListener(executor) { e: Exception ->
@@ -291,10 +297,10 @@ class ProminentObjectDetectorProcessor(val cameraStateListener: (cameraXViewInte
     }
 
 
+
+
     companion object {
         private const val TAG = "ProminentObjProcessor"
     }
 
-
 }
-

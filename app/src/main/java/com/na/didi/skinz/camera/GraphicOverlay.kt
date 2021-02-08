@@ -39,7 +39,7 @@ class GraphicOverlay(context: Context, attrs: AttributeSet) : View(context, attr
     }
 
 
-    fun setImageSourceInfo(width: Int, height: Int, isImageFlipped: Boolean) {
+    fun setImageSourceInfo(width: Int, height: Int) {
         previewWidth = width
         previewHeight = height
     }
