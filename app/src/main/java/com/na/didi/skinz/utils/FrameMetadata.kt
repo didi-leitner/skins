@@ -1,4 +1,4 @@
-package com.na.didi.skinz.camera
+package com.na.didi.skinz.utils
 
 class FrameMetadata private constructor(val width: Int, val height: Int, val rotation: Int) {
 
@@ -7,17 +7,17 @@ class FrameMetadata private constructor(val width: Int, val height: Int, val rot
         private var width = 0
         private var height = 0
         private var rotation = 0
-        fun setWidth(width: Int): FrameMetadata.Builder {
+        fun setWidth(width: Int): Builder {
             this.width = width
             return this
         }
 
-        fun setHeight(height: Int): FrameMetadata.Builder {
+        fun setHeight(height: Int): Builder {
             this.height = height
             return this
         }
 
-        fun setRotation(rotation: Int): FrameMetadata.Builder {
+        fun setRotation(rotation: Int): Builder {
             this.rotation = rotation
             return this
         }

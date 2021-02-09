@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:layout_width="match_parent">
 
-    <com.na.didi.skinz.camera.GraphicOverlay
+    <com.na.didi.skinz.view.custom.GraphicOverlay
         android:id="@+id/camera_preview_graphic_overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>

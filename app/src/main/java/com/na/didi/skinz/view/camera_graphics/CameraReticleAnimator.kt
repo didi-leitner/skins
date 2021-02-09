@@ -1,10 +1,10 @@
-package com.na.didi.skinz.objectdetection
+package com.na.didi.skinz.view.camera_graphics
 
 
 import android.animation.AnimatorSet
 import android.animation.ValueAnimator
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
-import com.na.didi.skinz.camera.GraphicOverlay
+import com.na.didi.skinz.view.custom.GraphicOverlay
 
 /** Custom animator for the object or barcode reticle in live camera.  */
 class CameraReticleAnimator(graphicOverlay: GraphicOverlay) {

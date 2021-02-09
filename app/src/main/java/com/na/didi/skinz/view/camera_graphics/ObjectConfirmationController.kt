@@ -1,13 +1,11 @@
-package com.na.didi.skinz.objectdetection
+package com.na.didi.skinz.view.camera_graphics
 
 
 import android.os.CountDownTimer
-import com.na.didi.skinz.camera.GraphicOverlay
 
 
-internal class ObjectConfirmationController
-
-(graphicOverlay: GraphicOverlay) {
+class ObjectConfirmationController
+{
 
     private val countDownTimer: CountDownTimer
 
@@ -20,11 +18,11 @@ internal class ObjectConfirmationController
         get() = progress.compareTo(1f) == 0
 
     init {
-        val confirmationTimeMs = 2500L
+        val confirmationTimeMs = 1500L
         countDownTimer = object : CountDownTimer(confirmationTimeMs, /* countDownInterval= */ 20) {
             override fun onTick(millisUntilFinished: Long) {
                 progress = (confirmationTimeMs - millisUntilFinished).toFloat() / confirmationTimeMs
-                graphicOverlay.invalidate()
+                //graphicOverlay.invalidate()
             }
 
             override fun onFinish() {

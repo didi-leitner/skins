@@ -12,7 +12,6 @@ import androidx.annotation.RequiresApi
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy
 import androidx.exifinterface.media.ExifInterface
-import com.na.didi.skinz.camera.FrameMetadata
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream

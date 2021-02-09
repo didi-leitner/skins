@@ -53,7 +53,9 @@ abstract class BaseFragmentMVI<S, E, I> : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel.bindViewIntents(lifecycleScope, viewIntentChannel.receiveAsFlow().filterNotNull())
+        lifecycleScope.launchWhenStarted {
+            viewModel.bindViewIntents(viewIntentChannel.receiveAsFlow().filterNotNull())
+        }
     }
 
     abstract fun renderState(state: S)

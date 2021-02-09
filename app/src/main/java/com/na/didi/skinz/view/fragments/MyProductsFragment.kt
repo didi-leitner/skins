@@ -41,6 +41,16 @@ class MyProductsFragment : BaseFragmentMVI<MyProductsViewState, MyProductsViewEf
         return binding.root
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        
+        lifecycleScope.launchWhenStarted {
+            viewIntentChannel.send(MyProductsViewIntent.InitView)
+        }
+
+    }
+
+
     override fun renderState(state: MyProductsViewState) {
         when (state) {
             is MyProductsViewState.Loading -> {

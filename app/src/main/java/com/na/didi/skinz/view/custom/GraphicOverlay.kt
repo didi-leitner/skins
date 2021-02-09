@@ -1,4 +1,4 @@
-package com.na.didi.skinz.camera
+package com.na.didi.skinz.view.custom
 
 import android.content.Context
 import android.graphics.Canvas
@@ -18,8 +18,8 @@ class GraphicOverlay(context: Context, attrs: AttributeSet) : View(context, attr
     private var heightScaleFactor = 1.0f
     private val graphics = ArrayList<Graphic>()
 
-    abstract class Graphic protected constructor(protected val overlay: GraphicOverlay) {
-        protected val context: Context = overlay.context
+    abstract class Graphic protected constructor() {
+        //protected val context: Context = overlay.context
 
         abstract fun draw(canvas: Canvas)
     }

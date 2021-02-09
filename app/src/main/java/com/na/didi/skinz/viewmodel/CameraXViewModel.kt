@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.hilt.lifecycle.ViewModelInject
-import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.viewModelScope
 import com.na.didi.skinz.data.model.Product
 import com.na.didi.skinz.data.repository.ProductsRepo
@@ -24,51 +23,47 @@ class CameraXViewModel @ViewModelInject internal constructor(
 ) : BaseViewModel<CameraViewState, CameraViewEffect, CameraViewIntent>() {
 
 
-    var isCameraLive = false
+    override suspend fun bindViewIntents(viewItents: Flow<CameraViewIntent>) {
 
-    override fun bindViewIntents(coroutineScope: LifecycleCoroutineScope, viewItents: Flow<CameraViewIntent>) {
+        viewItents.collect {
+            Log.v("uuu","cam view intent collected " + it)
 
-        coroutineScope.launch {
-            viewItents.collect {
-                Log.v("uuu","cam view intent collected " + it)
-
-                when (it) {
-                    is CameraViewIntent.StartDetecting ->{
-                        _state.value = CameraViewState.Detecting
-                    }
-                    is CameraViewIntent.OnPointCameraToDetectedObject ->
-                        _state.value = CameraViewState.Confirming
-
-                    is CameraViewIntent.OnMovedAwayFromDetectedObject ->
-                        _state.value = CameraViewState.Detected
-
-                    is CameraViewIntent.OnConfirmedDetectedObject ->
-                        _state.value = CameraViewState.Searching(it.detectedObjectInfo!!)
-
-                    is CameraViewIntent.OnTextDetected ->
-                        _state.value = CameraViewState.Searched(it.searchedObject)
-
-                    is CameraViewIntent.OnProductClickedInBottomSheet -> {
-                        //TODO check if ingr are to be found
-                        //pos -> addProducts
-                        //neg -> askForIngredients
-                        _state.value = CameraViewState.SearchedProductConfirmed(it.product)
-
-                    }
-
-                    is CameraViewIntent.AddProduct -> addProduct(it.context, it.bitmap, it.product)
+            when (it) {
+                is CameraViewIntent.StartDetecting ->{
+                    _state.value = CameraViewState.Detecting
                 }
+
+                is CameraViewIntent.OnProductsFound ->
+                    _state.value = CameraViewState.OnProductsFound(it.products)
+
+                is CameraViewIntent.OnProductClickedInBottomSheet -> {
+                    //TODO check if ingr are to be found
+                    //pos -> addProducts
+                    //neg -> askForIngredients
+                    addProduct(it.context, it.bitmap, it.product)
+                }
+
+                is CameraViewIntent.OnMovedAwayFromDetectedObject -> {
+                    _effect.send(CameraViewEffect.OnMovedAwayFromDetectedObject(it.boundingBox))
+                }
+                is CameraViewIntent.OnConfirmingDetectedObject -> {
+                    _effect.send(CameraViewEffect.OnConfirmingDetectedObject(it.boundingBox, it.progress))
+                }
+                is CameraViewIntent.OnConfirmedDetectedObject -> {
+                    _effect.send(CameraViewEffect.OnConfirmedDetectedObject(it.detectedObjectBitmap, it.boundingBox))
+                }
+
             }
         }
 
 
     }
 
+
     private fun addProduct(context: Context, bitmap: Bitmap?, product: Product) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                //save bitmap to app-private storage
-                //TODO scoped storage?
+                //save bitmap to app-private storage TODO scoped storage?
                 if (bitmap != null) {
                     val uri = BitmapUtils.saveBitmapToAppPrivateStorage(context, bitmap,
                             "my_products", System.currentTimeMillis().toString())
@@ -82,12 +77,6 @@ class CameraXViewModel @ViewModelInject internal constructor(
         }
     }
 
-
-    fun markCameraFrozen() {
-        Log.v("UUU","markFroz")
-
-
-    }
 
 
 }

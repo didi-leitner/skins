@@ -2,7 +2,6 @@ package com.na.didi.skinz.viewmodel
 
 import android.util.Log
 import androidx.hilt.lifecycle.ViewModelInject
-import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.viewModelScope
 import com.na.didi.skinz.data.model.UploadsModel
 import com.na.didi.skinz.data.repository.UploadsRepo
@@ -27,15 +26,13 @@ class UploadsViewModel @ViewModelInject internal constructor(
         }
     }
 
-    override fun bindViewIntents(coroutineScope: LifecycleCoroutineScope, viewIntentFlow: Flow<UploadsViewIntent>) {
-        coroutineScope.launchWhenStarted {
-            viewIntentFlow.collect {
-                Log.v("TAGGG", "viewIntent received " + it)
-                when (it) {
-                    UploadsViewIntent.SwipeToRefresh -> loadFromNetwork()
-                    is UploadsViewIntent.SelectContent -> selectContent(it.content)
+    override suspend fun bindViewIntents(viewIntentFlow: Flow<UploadsViewIntent>) {
+        viewIntentFlow.collect {
+            Log.v("TAGGG", "viewIntent received " + it)
+            when (it) {
+                UploadsViewIntent.SwipeToRefresh -> loadFromNetwork()
+                is UploadsViewIntent.SelectContent -> selectContent(it.content)
 
-                }
             }
         }
     }

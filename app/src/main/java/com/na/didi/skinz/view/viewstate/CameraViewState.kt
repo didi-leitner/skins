@@ -1,34 +1,23 @@
 package com.na.didi.skinz.view.viewstate
 
-import com.na.didi.skinz.camera.DetectedObjectInfo
-import com.na.didi.skinz.camera.SearchedObject
+import android.graphics.Bitmap
+import android.graphics.Rect
 import com.na.didi.skinz.data.model.Product
-
-/*enum class CameraViewState {
-    NOT_STARTED,
-    DETECTING,
-    DETECTED,
-    CONFIRMING,
-    CONFIRMED,
-    SEARCHING,
-    SEARCHED(string:String)
-}*/
 
 sealed class CameraViewState {
 
     object Idle: CameraViewState()
     object Detecting : CameraViewState()
-    object Detected : CameraViewState()
-    object Confirming: CameraViewState()
-    object Confirmed: CameraViewState()
-    data class Searching(val detectedObjectInfo: DetectedObjectInfo): CameraViewState()
-    data class Searched(val searchedObject: SearchedObject) : CameraViewState()
-    data class SearchedProductConfirmed(val product: Product) : CameraViewState()
     object ProductAdded : CameraViewState()
+    data class OnProductsFound(val products: List<Product>): CameraViewState()
 
 
 }
 
-sealed class CameraViewEffect {
+sealed class CameraViewEffect{
 
+    object OnNothingDetected: CameraViewEffect()
+    data class OnMovedAwayFromDetectedObject(val boundingBox: Rect): CameraViewEffect()
+    data class OnConfirmingDetectedObject(val boundingBox: Rect, val progress: Float): CameraViewEffect()
+    data class OnConfirmedDetectedObject(val detectedObjectBitmap: Bitmap, val boundingBox: Rect): CameraViewEffect()
 }
