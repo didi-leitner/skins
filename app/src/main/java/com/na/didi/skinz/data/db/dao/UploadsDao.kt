@@ -13,7 +13,6 @@ interface UploadsDao {
     fun getUploadsPaged(): PagingSource<Int, UploadsModel>
 
     @Insert
-    //TODO suspended fun ?
-    fun addUpload(uploadsModel: UploadsModel)
+    suspend fun addUpload(uploadsModel: UploadsModel)
 
 }

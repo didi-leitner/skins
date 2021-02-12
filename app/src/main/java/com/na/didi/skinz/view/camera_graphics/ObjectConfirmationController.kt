@@ -11,6 +11,8 @@ class ObjectConfirmationController
 
     private var objectId: Int? = null
 
+    private lateinit var onTickListener: (Float) -> Unit
+
     var progress = 0f
         private set
 
@@ -23,6 +25,8 @@ class ObjectConfirmationController
             override fun onTick(millisUntilFinished: Long) {
                 progress = (confirmationTimeMs - millisUntilFinished).toFloat() / confirmationTimeMs
                 //graphicOverlay.invalidate()
+                onTickListener(progress)
+
             }
 
             override fun onFinish() {
@@ -31,7 +35,7 @@ class ObjectConfirmationController
         }
     }
 
-    fun confirming(objectId: Int?) {
+    fun confirming(objectId: Int?, onTickListener: (Float)-> Unit) {
         if (objectId == this.objectId) {
             // Do nothing if it's already in confirming.
             return
@@ -39,6 +43,7 @@ class ObjectConfirmationController
 
         reset()
         this.objectId = objectId
+        this.onTickListener = onTickListener
         countDownTimer.start()
     }
 
@@ -46,6 +51,10 @@ class ObjectConfirmationController
         countDownTimer.cancel()
         objectId = null
         progress = 0f
+    }
+
+    fun isConfirming(): Boolean {
+        return this.objectId != null
     }
 }
 

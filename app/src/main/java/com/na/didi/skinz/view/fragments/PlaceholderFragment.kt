@@ -14,18 +14,12 @@ import com.na.didi.skinz.R
 class PlaceholderFragment : Fragment() {
 
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-    }
-
     override fun onCreateView(
-            inflater: LayoutInflater, container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View? {
         val root = inflater.inflate(R.layout.fragment_placeholder, container, false)
         val textView: TextView = root.findViewById(R.id.section_label)
-
 
 
         /*pageViewModel.text.observe(this, Observer<String> {

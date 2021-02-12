@@ -24,8 +24,6 @@ abstract class BaseFragmentMVI<S, E, I> : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        Log.v("UUU","onActivityCreated " + viewModel + " " + viewModel.state)
-
         lifecycleScope.launchWhenStarted {
             viewModel.state.collect {
 

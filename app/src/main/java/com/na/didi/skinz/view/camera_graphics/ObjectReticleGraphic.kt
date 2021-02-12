@@ -1,7 +1,6 @@
 package com.na.didi.skinz.view.camera_graphics
 
 
-
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -16,7 +15,7 @@ import com.na.didi.skinz.view.custom.GraphicOverlay
  * not recognized an object yet.
  */
 internal class ObjectReticleGraphic(context: Context, private val animator: CameraReticleAnimator) :
-        GraphicOverlay.Graphic() {
+    GraphicOverlay.Graphic() {
 
     private val outerRingFillPaint: Paint
     private val outerRingStrokePaint: Paint
@@ -39,14 +38,18 @@ internal class ObjectReticleGraphic(context: Context, private val animator: Came
 
         outerRingStrokePaint = Paint().apply {
             style = Style.STROKE
-            strokeWidth = resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_stroke_width).toFloat()
+            strokeWidth =
+                resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_stroke_width)
+                    .toFloat()
             strokeCap = Cap.ROUND
             color = ContextCompat.getColor(context, R.color.object_reticle_outer_ring_stroke)
         }
 
         innerRingStrokePaint = Paint().apply {
             style = Style.STROKE
-            strokeWidth = resources.getDimensionPixelOffset(R.dimen.object_reticle_inner_ring_stroke_width).toFloat()
+            strokeWidth =
+                resources.getDimensionPixelOffset(R.dimen.object_reticle_inner_ring_stroke_width)
+                    .toFloat()
             strokeCap = Cap.ROUND
             color = ContextCompat.getColor(context, R.color.white)
         }
@@ -56,11 +59,16 @@ internal class ObjectReticleGraphic(context: Context, private val animator: Came
             color = ContextCompat.getColor(context, R.color.reticle_ripple)
         }
 
-        outerRingFillRadius = resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_fill_radius)
-        outerRingStrokeRadius = resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_stroke_radius)
-        innerRingStrokeRadius = resources.getDimensionPixelOffset(R.dimen.object_reticle_inner_ring_stroke_radius)
-        rippleSizeOffset = resources.getDimensionPixelOffset(R.dimen.object_reticle_ripple_size_offset)
-        rippleStrokeWidth = resources.getDimensionPixelOffset(R.dimen.object_reticle_ripple_stroke_width)
+        outerRingFillRadius =
+            resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_fill_radius)
+        outerRingStrokeRadius =
+            resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_stroke_radius)
+        innerRingStrokeRadius =
+            resources.getDimensionPixelOffset(R.dimen.object_reticle_inner_ring_stroke_radius)
+        rippleSizeOffset =
+            resources.getDimensionPixelOffset(R.dimen.object_reticle_ripple_size_offset)
+        rippleStrokeWidth =
+            resources.getDimensionPixelOffset(R.dimen.object_reticle_ripple_stroke_width)
         rippleAlpha = ripplePaint.alpha
     }
 

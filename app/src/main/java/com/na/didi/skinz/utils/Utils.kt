@@ -10,6 +10,7 @@ object Utils {
             (context.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
 
 
+
     fun getCornerRoundedBitmap(srcBitmap: Bitmap, cornerRadius: Int): Bitmap {
         val dstBitmap = Bitmap.createBitmap(srcBitmap.width, srcBitmap.height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(dstBitmap)

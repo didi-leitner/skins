@@ -19,7 +19,6 @@ class GraphicOverlay(context: Context, attrs: AttributeSet) : View(context, attr
     private val graphics = ArrayList<Graphic>()
 
     abstract class Graphic protected constructor() {
-        //protected val context: Context = overlay.context
 
         abstract fun draw(canvas: Canvas)
     }
@@ -52,10 +51,10 @@ class GraphicOverlay(context: Context, attrs: AttributeSet) : View(context, attr
      * coordinate system.
      */
     fun translateRect(rect: Rect) = RectF(
-            translateX(rect.left.toFloat()),
-            translateY(rect.top.toFloat()),
-            translateX(rect.right.toFloat()),
-            translateY(rect.bottom.toFloat())
+        translateX(rect.left.toFloat()),
+        translateY(rect.top.toFloat()),
+        translateX(rect.right.toFloat()),
+        translateY(rect.bottom.toFloat())
     )
 
 
@@ -76,7 +75,6 @@ class GraphicOverlay(context: Context, attrs: AttributeSet) : View(context, attr
 
         //cu previewSize de la user 1920 x 960
         //ML Vision -> Urm: 960  1080 1.125     1920 2159 1.1244792
-
 
 
         //2021-01-31 11:26:16.368 Screen metrics: 1080 x 2340

@@ -23,8 +23,8 @@ class UploadsFragment : BaseFragmentMVI<UploadsViewState, UploadsViewEffect, Upl
     override val viewModel: UploadsViewModel by viewModels()
 
     override fun onCreateView(
-            inflater: LayoutInflater, container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View {
         val binding = FragmentUploadsBinding.inflate(inflater, container, false)
 

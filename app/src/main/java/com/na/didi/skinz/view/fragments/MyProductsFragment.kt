@@ -18,19 +18,20 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class MyProductsFragment : BaseFragmentMVI<MyProductsViewState, MyProductsViewEffect, MyProductsViewIntent>() {
+class MyProductsFragment :
+    BaseFragmentMVI<MyProductsViewState, MyProductsViewEffect, MyProductsViewIntent>() {
 
     override val viewModel: MyProductsViewModel by viewModels()
 
     private lateinit var adapter: MyProductsAdapter
 
     override fun onCreateView(
-            inflater: LayoutInflater, container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View {
 
         val binding = FragmentMyProductsBinding.inflate(inflater, container, false)
-        val clickListener = ProductClickListener{
+        val clickListener = ProductClickListener {
             lifecycleScope.launch {
                 viewIntentChannel.send(MyProductsViewIntent.OnListItemClicked(it))
             }
@@ -43,7 +44,7 @@ class MyProductsFragment : BaseFragmentMVI<MyProductsViewState, MyProductsViewEf
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         lifecycleScope.launchWhenStarted {
             viewIntentChannel.send(MyProductsViewIntent.InitView)
         }

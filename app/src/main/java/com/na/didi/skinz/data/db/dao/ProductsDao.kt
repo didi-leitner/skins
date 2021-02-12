@@ -10,7 +10,7 @@ import com.na.didi.skinz.data.model.Product
 @Dao
 interface ProductsDao {
 
-    @Query("SELECT * FROM my_products_table")
+    @Query("SELECT * FROM my_products_table ORDER BY timeAdded DESC")
     fun getProductsPaged(): PagingSource<Int, Product>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

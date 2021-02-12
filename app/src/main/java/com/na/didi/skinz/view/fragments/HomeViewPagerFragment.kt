@@ -40,6 +40,14 @@ class HomeViewPagerFragment : Fragment() {
             tab.setIcon(getTabIcon(position))
         }.attach()
 
+        arguments?.let {
+            val safeArgs = HomeViewPagerFragmentArgs.fromBundle(it)
+            val selectedTab = safeArgs.selectedtab
+
+            if(selectedTab.equals("products")){
+                tabLayout.getTabAt(MY_PRODUCTS_PAGE_INDEX)?.select()
+            }
+        }
 
         //(activity as AppCompatActivity).setSupportActionBar(binding.toolbar)
 

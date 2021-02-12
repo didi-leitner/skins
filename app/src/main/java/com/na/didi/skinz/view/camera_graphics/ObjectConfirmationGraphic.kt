@@ -1,7 +1,6 @@
 package com.na.didi.skinz.view.camera_graphics
 
 
-
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -17,8 +16,8 @@ import com.na.didi.skinz.view.custom.GraphicOverlay
  * confirmed for a follow up processing, e.g. product search.
  */
 class ObjectConfirmationGraphic internal constructor(
-        context: Context,
-        private val confirmationProgress: Float
+    context: Context,
+    private val confirmationProgress: Float
 ) : GraphicOverlay.Graphic() {
 
     private val outerRingFillPaint: Paint
@@ -39,14 +38,18 @@ class ObjectConfirmationGraphic internal constructor(
 
         outerRingStrokePaint = Paint().apply {
             style = Style.STROKE
-            strokeWidth = resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_stroke_width).toFloat()
+            strokeWidth =
+                resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_stroke_width)
+                    .toFloat()
             strokeCap = Cap.ROUND
             color = ContextCompat.getColor(context, R.color.object_reticle_outer_ring_stroke)
         }
 
         progressRingStrokePaint = Paint().apply {
             style = Style.STROKE
-            strokeWidth = resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_stroke_width).toFloat()
+            strokeWidth =
+                resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_stroke_width)
+                    .toFloat()
             strokeCap = Cap.ROUND
             color = ContextCompat.getColor(context, R.color.white)
         }
@@ -54,13 +57,17 @@ class ObjectConfirmationGraphic internal constructor(
         innerRingPaint = Paint()
         innerRingPaint.style = Style.STROKE
         innerRingPaint.strokeWidth =
-                resources.getDimensionPixelOffset(R.dimen.object_reticle_inner_ring_stroke_width).toFloat()
+            resources.getDimensionPixelOffset(R.dimen.object_reticle_inner_ring_stroke_width)
+                .toFloat()
         innerRingPaint.strokeCap = Cap.ROUND
         innerRingPaint.color = ContextCompat.getColor(context, R.color.white)
 
-        outerRingFillRadius = resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_fill_radius)
-        outerRingStrokeRadius = resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_stroke_radius)
-        innerRingStrokeRadius = resources.getDimensionPixelOffset(R.dimen.object_reticle_inner_ring_stroke_radius)
+        outerRingFillRadius =
+            resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_fill_radius)
+        outerRingStrokeRadius =
+            resources.getDimensionPixelOffset(R.dimen.object_reticle_outer_ring_stroke_radius)
+        innerRingStrokeRadius =
+            resources.getDimensionPixelOffset(R.dimen.object_reticle_inner_ring_stroke_radius)
     }
 
     override fun draw(canvas: Canvas) {
@@ -71,18 +78,18 @@ class ObjectConfirmationGraphic internal constructor(
         canvas.drawCircle(cx, cy, innerRingStrokeRadius.toFloat(), innerRingPaint)
 
         val progressRect = RectF(
-                cx - outerRingStrokeRadius,
-                cy - outerRingStrokeRadius,
-                cx + outerRingStrokeRadius,
-                cy + outerRingStrokeRadius
+            cx - outerRingStrokeRadius,
+            cy - outerRingStrokeRadius,
+            cx + outerRingStrokeRadius,
+            cy + outerRingStrokeRadius
         )
         val sweepAngle = confirmationProgress * 360
         canvas.drawArc(
-                progressRect,
-                /* startAngle= */ 0f,
-                sweepAngle,
-                /* useCenter= */ false,
-                progressRingStrokePaint
+            progressRect,
+            /* startAngle= */ 0f,
+            sweepAngle,
+            /* useCenter= */ false,
+            progressRingStrokePaint
         )
     }
 }

@@ -2,7 +2,6 @@ package com.na.didi.skinz.view.adapters
 
 
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,7 +12,6 @@ import androidx.recyclerview.widget.RecyclerView.Adapter
 import com.na.didi.skinz.R
 import com.na.didi.skinz.data.model.Product
 
-/** Presents the list of product items from cloud product search.  */
 class BottomSheetProductAdapter(private val productList: List<Product>, val clickListener: ProductPreviewClickListener)
     : Adapter<BottomSheetProductAdapter.ProductViewHolder>() {
 
@@ -28,8 +26,7 @@ class BottomSheetProductAdapter(private val productList: List<Product>, val clic
         fun bindProduct(product: Product, clickListener: ProductPreviewClickListener) {
             imageView.setImageDrawable(null)
             if (!TextUtils.isEmpty(product.imagePath)) {
-                //TODO Glide
-                //ImageDownloadTask(imageView, imageSize).execute(product.imageUrl)
+                //TODO ?
             } else {
                 imageView.setImageResource(R.drawable.logo_google_cloud)
             }
@@ -59,8 +56,6 @@ class BottomSheetProductAdapter(private val productList: List<Product>, val clic
 
 class ProductPreviewClickListener(val clickListener: (product: Product) -> Unit) {
     fun onClick(product: Product) {
-
-        Log.v("TAGGG","onclickcalled " + product + " aaand " + clickListener )
         clickListener(product)
     }
 }

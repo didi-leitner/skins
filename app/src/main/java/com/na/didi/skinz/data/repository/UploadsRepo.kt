@@ -21,7 +21,7 @@ class UploadsRepo @Inject constructor(private val uploadsDao: UploadsDao) {
         ).flow.cachedIn(scope)
     }
 
-    fun insertUpload(upload : UploadsModel) {
+    suspend fun insertUpload(upload : UploadsModel) {
         uploadsDao.addUpload(upload)
     }
 

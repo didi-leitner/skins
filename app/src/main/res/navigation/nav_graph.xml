@@ -17,12 +17,31 @@
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
 
+        <argument
+            android:name="selectedtab"
+            android:defaultValue="uploads"
+            app:argType="string" />
+
     </fragment>
 
     <fragment
         android:id="@+id/cameraFragment"
         android:name="com.na.didi.skinz.view.fragments.CameraXLivePreviewFragment"
-        android:label="CameraFragment" />
+        android:label="CameraFragment" >
+
+        <action
+            android:id="@+id/action_camera_fragment_to_home_view_pager"
+            app:destination="@+id/homeViewPagerFragment"
+            app:enterAnim="@anim/slide_in_left"
+            app:exitAnim="@anim/slide_out_right"
+            app:popEnterAnim="@anim/slide_in_right"
+            app:popExitAnim="@anim/slide_out_left"
+            app:popUpTo="@+id/homeViewPagerFragment"
+            app:popUpToInclusive="true"/>
+
+
+
+    </fragment>
 
 
 

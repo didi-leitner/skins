@@ -4,20 +4,29 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import com.na.didi.skinz.data.model.Product
 
-sealed class CameraViewState {
 
-    object Idle: CameraViewState()
-    object Detecting : CameraViewState()
-    object ProductAdded : CameraViewState()
-    data class OnProductsFound(val products: List<Product>): CameraViewState()
-
-
+sealed class CameraState {
+    object Idle : CameraState()
+    //think about
+    //workaround - need this as a class, not a singleton object - conf change
+    class Detecting : CameraState()
 }
 
-sealed class CameraViewEffect{
+data class ViewState(val cameraState: CameraState, val productResult: ProductsResult)
 
-    object OnNothingDetected: CameraViewEffect()
-    data class OnMovedAwayFromDetectedObject(val boundingBox: Rect): CameraViewEffect()
-    data class OnConfirmingDetectedObject(val boundingBox: Rect, val progress: Float): CameraViewEffect()
-    data class OnConfirmedDetectedObject(val detectedObjectBitmap: Bitmap, val boundingBox: Rect): CameraViewEffect()
+//TODO move this somewhere else
+data class ProductsResult(val products: List<Product>, val bitmap: Bitmap?, val boundingBox: Rect?)
+
+
+sealed class CameraViewEffect {
+
+    object OnNothingDetected : CameraViewEffect()
+    data class OnConfirmingDetectedObject(val boundingBox: Rect, val progress: Float) :
+        CameraViewEffect()
+
+    data class OnObjectPicked(val boundingBox: Rect) :
+        CameraViewEffect()
+
+    data class OnProductAdded(val product: Product) : CameraViewEffect()
+
 }

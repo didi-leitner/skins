@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 
 abstract class BaseViewModel<STATE, EFFECT, INTENT>: ViewModel() {
 
-    //can't use MutableLiveData (construct without default value)
+    //can't use MutableLiveData (to construct without default value)
     //because and livedata.asFlow won't provide a 'StateFlow' just a Flow
     //protected var _state: MutableLiveData<STATE> = MutableLiveData<STATE>()
     protected val DEFAULT_STATE = null

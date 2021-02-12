@@ -16,6 +16,6 @@ data class Product(
         @ColumnInfo(name = "local_url")
         var imagePath: String?,
 
-        val currentTimeMillis: Long
+        val timeAdded: Long
 )
 

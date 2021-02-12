@@ -24,12 +24,15 @@ class UploadsAdapter(val clickListener: UploadItemClickListener) : PagingDataAda
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UploadsViewHolder {
         return UploadsViewHolder(
-                ListItemUploadBinding.inflate(LayoutInflater.from(parent.context), parent, false), clickListener
+            ListItemUploadBinding.inflate(LayoutInflater.from(parent.context), parent, false),
+            clickListener
         )
     }
 
-    class UploadsViewHolder(private val binding: ListItemUploadBinding, val _clickListener: UploadItemClickListener)
-        : RecyclerView.ViewHolder(binding.root) {
+    class UploadsViewHolder(
+        private val binding: ListItemUploadBinding,
+        val _clickListener: UploadItemClickListener
+    ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: UploadsModel, position: Int) {
             binding.apply {

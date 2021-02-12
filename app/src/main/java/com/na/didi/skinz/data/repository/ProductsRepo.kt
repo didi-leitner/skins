@@ -18,12 +18,18 @@ class ProductsRepo @Inject constructor(private val productsDao: ProductsDao) {
         productsDao.addProduct(product)
     }
 
-    fun getMyProducts(scope: CoroutineScope): Flow<PagingData<Product>> {
+    fun initProductListPaging(scope: CoroutineScope): Flow<PagingData<Product>> {
+
+        val pagingSource = productsDao.getProductsPaged()
+
         return Pager(
-                config = PagingConfig(enablePlaceholders = false, pageSize = DB_PAGE_SIZE),
-                pagingSourceFactory = { productsDao.getProductsPaged() }
+            config = PagingConfig(enablePlaceholders = false, pageSize = DB_PAGE_SIZE),
+            pagingSourceFactory = { pagingSource }
         ).flow.cachedIn(scope)
-        //flow.cachedIn
+    }
+
+    fun loadFromNetwork() {
+        //TODO
     }
 
     companion object {

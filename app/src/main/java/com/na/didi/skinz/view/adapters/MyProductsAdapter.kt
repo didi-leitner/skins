@@ -1,6 +1,5 @@
 package com.na.didi.skinz.view.adapters
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
@@ -25,12 +24,15 @@ class MyProductsAdapter(val productClickListener: ProductClickListener) : Paging
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyProductsViewHolder {
         return MyProductsViewHolder(
-                ListItemMyProductBinding.inflate(LayoutInflater.from(parent.context), parent, false), productClickListener
+            ListItemMyProductBinding.inflate(LayoutInflater.from(parent.context), parent, false),
+            productClickListener
         )
     }
 
-    class MyProductsViewHolder(private val binding: ListItemMyProductBinding, private val productClickListener: ProductClickListener)
-        : RecyclerView.ViewHolder(binding.root) {
+    class MyProductsViewHolder(
+        private val binding: ListItemMyProductBinding,
+        private val productClickListener: ProductClickListener
+    ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: Product, position: Int) {
             binding.apply {
@@ -61,7 +63,6 @@ class MyProductsAdapter(val productClickListener: ProductClickListener) : Paging
 class ProductClickListener(val clickListener: (product: Product) -> Unit) {
     fun onClick(product: Product) {
 
-        Log.v("TAGGG","onclickcalled " + product + " aaand " + clickListener )
         clickListener(product)
     }
 }
