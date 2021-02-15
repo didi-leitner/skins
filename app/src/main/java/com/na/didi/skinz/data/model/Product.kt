@@ -14,6 +14,7 @@ data class Product(
         val subtitle: String,
 
         @ColumnInfo(name = "local_url")
+
         var imagePath: String?,
 
         val timeAdded: Long

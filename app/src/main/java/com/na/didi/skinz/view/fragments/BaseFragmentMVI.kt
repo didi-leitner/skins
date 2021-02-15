@@ -1,8 +1,6 @@
 package com.na.didi.skinz.view.fragments
 
-import android.os.Bundle
 import android.util.Log
-import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.na.didi.skinz.viewmodel.BaseViewModel
@@ -17,17 +15,11 @@ import kotlinx.coroutines.flow.receiveAsFlow
 * */
 abstract class BaseFragmentMVI<S, E, I> : Fragment() {
 
-    abstract val viewModel: BaseViewModel<S, E, I>
-
-    protected val viewIntentChannel = Channel<I>(Channel.CONFLATED)
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-
+    init {
+        Log.v("YYY","init block base  frag " + this)
         lifecycleScope.launchWhenStarted {
             viewModel.state.collect {
 
-                Log.v("UUUU","collcted state " + it)
                 it?.let {
                     renderState(it)
 
@@ -46,15 +38,13 @@ abstract class BaseFragmentMVI<S, E, I> : Fragment() {
             }
         }
 
-
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
         lifecycleScope.launchWhenStarted {
             viewModel.bindViewIntents(viewIntentChannel.receiveAsFlow().filterNotNull())
         }
     }
+    abstract val viewModel: BaseViewModel<S, E, I>
+
+    protected val viewIntentChannel = Channel<I>(Channel.CONFLATED)
 
     abstract fun renderState(state: S)
 

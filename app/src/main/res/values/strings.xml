@@ -4,6 +4,8 @@
     <string name="tab_text_1">Tab 1</string>
     <string name="tab_text_2">Tab 2</string>
 
+    <string name="tab_uploads">uploads</string>
+
     <string name="prompt_point_at_an_object">Point your camera at a product </string>
     <string name="prompt_hold_camera_steady">Keep camera still for a moment</string>
     <string name="prompt_detecting_text">Detecting text&#8230;</string>

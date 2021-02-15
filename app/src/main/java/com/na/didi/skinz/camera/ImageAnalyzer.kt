@@ -75,7 +75,7 @@ class ImageAnalyzer(
         detectObjectInImage(inputImage)
             .addOnSuccessListener(executor) { objects ->
                 //TODO improve latency
-                Log.d(TAG, "Latency is: ${SystemClock.elapsedRealtime() - startMs}")
+                //Log.d(TAG, "Latency is: ${SystemClock.elapsedRealtime() - startMs}")
                 this.onImageProxyProcessed(objects, imageProxy)
             }
             .addOnFailureListener(executor) { e: Exception ->

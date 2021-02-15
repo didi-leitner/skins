@@ -21,6 +21,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -191,7 +192,7 @@ class CameraXLivePreviewFragment :
 
     override fun onDestroyView() {
         super.onDestroyView()
-        imageAnalyzer.stop()
+        imageAnalyzer?.stop()
         cameraExecutor.shutdown()
         //displayManager.unregisterDisplayListener(displayListener)
 
@@ -358,8 +359,8 @@ class CameraXLivePreviewFragment :
                 }
             }
             if (allNeededPermissions.isNotEmpty()) {
-                ActivityCompat.requestPermissions(
-                    requireActivity(),
+                Log.v(TAG,"requesting permissions " + allNeededPermissions)
+                requestPermissions(
                     allNeededPermissions.toTypedArray(),
                     PERMISSION_REQUESTS
                 )
@@ -371,8 +372,9 @@ class CameraXLivePreviewFragment :
         permissions: Array<String>,
         grantResults: IntArray
     ) {
-        Log.i(TAG, "Permission granted!")
+        Log.i(TAG, "oReqPermissionsResult!")
         if (allPermissionsGranted()) {
+            Log.i(TAG, "Permissions granted!")
             setupCamera()
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -609,10 +611,17 @@ class CameraXLivePreviewFragment :
 
             is CameraViewEffect.OnProductAdded -> {
                 bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
-                val action =
-                    CameraXLivePreviewFragmentDirections.actionCameraFragmentToHomeViewPager("products")
-
-                findNavController().navigate(action)
+                //val action =
+                //    CameraXLivePreviewFragmentDirections.actionCameraFragmentToHomeViewPager()
+                /*val bundle = Bundle().apply {
+                    putString("selectedTab","products")
+                }*/
+                //TODO not wokring as it should, this bundle is not received
+                //find a way for a pop-action + arg
+                //safeArg works only if there's a destination specified
+                //a specified destination will re-create the fragment
+                val bundle = bundleOf("selectedTab" to "products")
+                findNavController().navigate(R.id.action_camera_fragment_to_home_view_pager, bundle)
             }
 
         }

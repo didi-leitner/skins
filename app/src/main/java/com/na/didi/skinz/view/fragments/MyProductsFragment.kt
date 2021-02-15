@@ -30,6 +30,7 @@ class MyProductsFragment :
         savedInstanceState: Bundle?
     ): View {
 
+        Log.v("YYY","onCreateView MyPRodFrag")
         val binding = FragmentMyProductsBinding.inflate(inflater, container, false)
         val clickListener = ProductClickListener {
             lifecycleScope.launch {
@@ -45,6 +46,7 @@ class MyProductsFragment :
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        Log.v("YYY","onViewCreated MyProductsFrag")
         lifecycleScope.launchWhenStarted {
             viewIntentChannel.send(MyProductsViewIntent.InitView)
         }
@@ -53,6 +55,7 @@ class MyProductsFragment :
 
 
     override fun renderState(state: MyProductsViewState) {
+        Log.v("YYY","renderState " + state)
         when (state) {
             is MyProductsViewState.Loading -> {
             }

@@ -44,11 +44,6 @@ class MyProductsViewModelTest {
         productsrepo = mock<ProductsRepo>()
         viewModel = MyProductsViewModel(productsrepo)
 
-        //in repo
-        /*val products =
-                listOf(Product(5, "Paula's Choice", "Niacinamide 10%", "", 0))
-            pagingData = PagingData.from(products)*/
-
     }
 
 

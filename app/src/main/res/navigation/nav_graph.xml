@@ -18,9 +18,10 @@
             app:popExitAnim="@anim/slide_out_right" />
 
         <argument
-            android:name="selectedtab"
-            android:defaultValue="uploads"
-            app:argType="string" />
+            android:name="selectedTab"
+            app:argType="string"
+            android:defaultValue="products" />
+
 
     </fragment>
 
@@ -31,13 +32,19 @@
 
         <action
             android:id="@+id/action_camera_fragment_to_home_view_pager"
-            app:destination="@+id/homeViewPagerFragment"
+            app:popUpTo="@+id/homeViewPagerFragment"
             app:enterAnim="@anim/slide_in_left"
             app:exitAnim="@anim/slide_out_right"
             app:popEnterAnim="@anim/slide_in_right"
-            app:popExitAnim="@anim/slide_out_left"
-            app:popUpTo="@+id/homeViewPagerFragment"
-            app:popUpToInclusive="true"/>
+            app:popExitAnim="@anim/slide_out_left">
+
+            <argument
+                android:name="selectedTab"
+                app:argType="string"
+                android:defaultValue="products" />
+
+
+        </action>
 
 
 

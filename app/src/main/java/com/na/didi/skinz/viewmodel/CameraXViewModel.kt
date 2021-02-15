@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.viewModelScope
 import com.na.didi.skinz.data.model.Product
+import com.na.didi.skinz.data.network.Resource
 import com.na.didi.skinz.data.repository.ProductsRepo
 import com.na.didi.skinz.utils.BitmapUtils
 import com.na.didi.skinz.view.viewintent.CameraViewIntent
@@ -66,6 +67,7 @@ class CameraXViewModel @ViewModelInject internal constructor(
     private fun addProduct(context: Context, bitmap: Bitmap?, product: Product) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+
                 //save bitmap to app-private storage TODO scoped storage?
                 if (bitmap != null) {
                     val uri = BitmapUtils.saveBitmapToAppPrivateStorage(
@@ -75,9 +77,20 @@ class CameraXViewModel @ViewModelInject internal constructor(
 
                     product.imagePath = uri.toString()
                 }
-                productsRepo.insertProduct(product)
 
-                _effect.send(CameraViewEffect.OnProductAdded(product))
+                when(val res = productsRepo.insertProduct(product)) {
+                    is Resource.Success -> {
+                        res.data?.let {
+                            _effect.send(CameraViewEffect.OnProductAdded(it))
+                        }
+                    }
+                    is Resource.Error -> {
+                        Log.v("CameraXlive","Error $res.msg")
+                        //TODO maybe snackbar
+                    }
+
+                }
+
             }
         }
     }

@@ -29,7 +29,8 @@ class HomeViewPagerFragment : Fragment() {
         val fab: FloatingActionButton = binding.fab
 
         fab.setOnClickListener { view ->
-            view.findNavController().navigate(R.id.action_home_view_pager_fragment_to_camera_fragment)
+            view.findNavController()
+                .navigate(R.id.action_home_view_pager_fragment_to_camera_fragment)
         }
 
 
@@ -40,19 +41,23 @@ class HomeViewPagerFragment : Fragment() {
             tab.setIcon(getTabIcon(position))
         }.attach()
 
+
+
         arguments?.let {
-            val safeArgs = HomeViewPagerFragmentArgs.fromBundle(it)
-            val selectedTab = safeArgs.selectedtab
+            val selectedTab = it.getString("selectedTab")
+            //val safeArgs = HomeViewPagerFragmentArgs.fromBundle(it)
+            //val selectedTab = safeArgs.selectedTab
+            //Log.v("HomeViewPager","oncreateView HomeViewPFrag SELECTED TAB " + selectedTab)
 
             if(selectedTab.equals("products")){
                 tabLayout.getTabAt(MY_PRODUCTS_PAGE_INDEX)?.select()
             }
         }
 
-        //(activity as AppCompatActivity).setSupportActionBar(binding.toolbar)
 
         return binding.root
     }
+
 
     private fun getTabIcon(position: Int): Int {
         return when (position) {
