@@ -13,7 +13,7 @@ import javax.inject.Singleton
 class ProductsLocalDataSourceImpl @Inject constructor(private val productsDao: ProductsDao) :
     ProductsLocalDataSource {
 
-    override suspend fun addProduct(product: Product) {
+    override suspend fun insertProduct(product: Product) {
         productsDao.addProduct(product)
 
     }

@@ -1,12 +1,10 @@
 package com.na.didi.skinz.data.repository
 
 import androidx.paging.PagingData
-import androidx.paging.cachedIn
 import com.na.didi.skinz.data.model.Product
 import com.na.didi.skinz.data.network.Resource
 import com.na.didi.skinz.data.source.ProductsLocalDataSource
 import com.na.didi.skinz.data.source.ProductsRemoteDataSource
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,21 +15,21 @@ class ProductsRepo @Inject constructor(
     private val remoteDataSource: ProductsRemoteDataSource
 ) {
 
-    fun initProductListPaging(scope: CoroutineScope): Flow<PagingData<Product>> {
-        return localDataSoruce.getProductsPaged().cachedIn(scope)
+    fun getProductsPagingDataFlow(): Flow<PagingData<Product>> {
+        return localDataSoruce.getProductsPaged()
     }
 
-    suspend fun insertProduct(product: Product): Resource<Product> {
+    suspend fun addProduct(product: Product): Resource<Product> {
 
         try {
             val apiResponse = remoteDataSource.postProduct(product)
             if (apiResponse.isSuccessful()) {
 
                 apiResponse.body?.let {
-                    localDataSoruce.addProduct(it)
+                    localDataSoruce.insertProduct(it)
                     return Resource.Success(apiResponse.body)
                 } ?: run {
-                    localDataSoruce.addProduct(product)
+                    localDataSoruce.insertProduct(product)
                     return Resource.Success(product)
                 }
 

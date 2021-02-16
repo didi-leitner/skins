@@ -1,9 +1,15 @@
 package com.na.didi.skinz.repo
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.lifecycle.Observer
+import androidx.lifecycle.asLiveData
+import androidx.paging.PagingData
 import com.na.didi.skinz.data.model.Product
+import com.na.didi.skinz.data.network.Resource
 import com.na.didi.skinz.data.repository.ProductsRepo
 import com.na.didi.skinz.data.source.FakeProductsLocalDataSource
+import com.na.didi.skinz.data.source.FakeProductsRemoteDataSource
+import com.nhaarman.mockitokotlin2.*
 import kotlinx.coroutines.test.runBlockingTest
 import org.junit.Before
 import org.junit.Rule
@@ -17,12 +23,10 @@ class ProductsRepoTest {
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
-    //private lateinit var tasksRemoteDataSource: FakeDataSource
-    private lateinit var tasksLocalDataSource: FakeProductsLocalDataSource
+    private lateinit var productsRemoteDataSource: FakeProductsRemoteDataSource
+    private lateinit var productsLocalDataSource: FakeProductsLocalDataSource
 
-    // Class under test
-    private lateinit var tasksRepository: ProductsRepo
-
+    private lateinit var productsRepo: ProductsRepo
 
 
     @Before
@@ -31,49 +35,72 @@ class ProductsRepoTest {
         val products =
             mutableListOf(Product(5, "Paula's Choice", "Niacinamide 10%", "", 0))
 
-        //tasksRemoteDataSource = FakeDataSource(remoteTasks.toMutableList())
-        tasksLocalDataSource = FakeProductsLocalDataSource(products)
-        // Get a reference to the class under test
-        tasksRepository = ProductsRepo(tasksLocalDataSource)
+        productsRemoteDataSource = spy(FakeProductsRemoteDataSource())
+        productsLocalDataSource = spy(FakeProductsLocalDataSource(products))
+
+        productsRepo = ProductsRepo(productsLocalDataSource, productsRemoteDataSource)
     }
 
     @Test
-    fun insert_product_should_update_pagingData(){
+    fun observe_products_paging_will_get_from_local_and_update_pagingData() {
+        testCoroutineRule.runBlockingTest {
 
+            val stateObserver = mock<Observer<PagingData<Product>>>()
+            productsRepo.getProductsPagingDataFlow().asLiveData()
+                .observeForever(stateObserver)
 
+            verify(productsLocalDataSource, times(1)).getProductsPaged()
+
+            argumentCaptor<PagingData<Product>>()
+                .run {
+                    verify(stateObserver, times(1)).onChanged(capture())
+                }
+        }
+    }
+
+    @Test
+    fun add_product_success_should_post_and_insert_and_update_pagingData() {
 
 
         testCoroutineRule.runBlockingTest {
 
-            //if data inserted, new paging data is received in the flow
-            /*val dao = mock<ProductsDao>()
-            val productsRepo = ProductsRepo(dao)
-            val product = mock<Product>()
-
-            val pd = mock<PagingData<Product>>()
-            val mockPagingData = flowOf(pd)
-
-            whenever(productsRepo.initProductListPaging(mock<CoroutineScope>())).thenReturn(mockPagingData)
-
-
             val stateObserver = mock<Observer<PagingData<Product>>>()
-            productsRepo.initProductListPaging(mock<CoroutineScope>())
-                .asLiveData().observeForever(stateObserver)
+            productsRepo.getProductsPagingDataFlow().asLiveData()
+                .observeForever(stateObserver)
 
 
-            productsRepo.insertProduct(product)
+            val product = Product(6, "Paula's Choice", "Vit C Booster", "", 0)
+            val res = productsRepo.addProduct(product)
 
+            assert(res is Resource.Success)
+            verify(productsRemoteDataSource, times(1)).postProduct(product)
+            verify(productsLocalDataSource, times(1)).insertProduct(any())
 
-            val captor = ArgumentCaptor.forClass(PagingData::class.java)
+            val captor = argumentCaptor<PagingData<Product>>()
             captor.run {
-                verify(stateObserver, times(1)).onChanged(capture() as PagingData<Product>?)
+                verify(stateObserver, times(2)).onChanged(capture())
+                //no useful apis to test PagingData, reiterate in the future
+                // allValues[1].filterSync {
+                //     it.equals(product)
+                //} .equals(PagingData.from(emptyList()))//listOf(product)))
+                //)
 
             }
-
-            val pagingSource = mock<PagingSource<Int, Product>>()
-            val pagingData = mock<PagingData<Product>>()*/
         }
 
+    }
+
+    @Test
+    fun add_product_error() {
+
+        testCoroutineRule.runBlockingTest {
+
+            val product = Product(8, "", "", "", 0)
+            val res = productsRepo.addProduct(product)
+            assert(res is Resource.Error)
+
+
+        }
 
     }
 

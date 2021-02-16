@@ -78,7 +78,7 @@ class CameraXViewModel @ViewModelInject internal constructor(
                     product.imagePath = uri.toString()
                 }
 
-                when(val res = productsRepo.insertProduct(product)) {
+                when(val res = productsRepo.addProduct(product)) {
                     is Resource.Success -> {
                         res.data?.let {
                             _effect.send(CameraViewEffect.OnProductAdded(it))

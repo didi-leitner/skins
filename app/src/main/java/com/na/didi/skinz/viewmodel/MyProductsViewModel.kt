@@ -3,6 +3,7 @@ package com.na.didi.skinz.viewmodel
 
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.viewModelScope
+import androidx.paging.cachedIn
 import com.na.didi.skinz.data.model.Product
 import com.na.didi.skinz.data.repository.ProductsRepo
 import com.na.didi.skinz.view.viewintent.MyProductsViewIntent
@@ -40,9 +41,10 @@ class MyProductsViewModel @ViewModelInject internal constructor(
 
         viewModelScope.launch {
             try {
-                productsRepo.initProductListPaging(this).collectLatest { pagingData ->
-                    _state.value = MyProductsViewState.ProductList(pagingData, null)
-                }
+                productsRepo.getProductsPagingDataFlow().cachedIn(this)
+                    .collectLatest { pagingData ->
+                        _state.value = MyProductsViewState.ProductList(pagingData, null)
+                    }
 
             } catch (exception: Exception) {
                 //state.value = MyProductsViewState.Error()

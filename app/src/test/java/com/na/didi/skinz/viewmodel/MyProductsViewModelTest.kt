@@ -9,7 +9,10 @@ import com.na.didi.skinz.data.repository.ProductsRepo
 import com.na.didi.skinz.view.viewintent.MyProductsViewIntent
 import com.na.didi.skinz.view.viewstate.MyProductsViewEffect
 import com.na.didi.skinz.view.viewstate.MyProductsViewState
-import com.nhaarman.mockitokotlin2.*
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runBlockingTest
 import org.junit.Before
@@ -56,7 +59,7 @@ class MyProductsViewModelTest {
 
             val pagingData = mock<PagingData<Product>>()
             val mockPagingData = flowOf(pagingData)
-            whenever(productsrepo.initProductListPaging(any())).thenReturn(mockPagingData)
+            whenever(productsrepo.getProductsPagingDataFlow()).thenReturn(mockPagingData)
 
             val stateObserver = mock<Observer<MyProductsViewState>>()
             viewModel.state.asLiveData().observeForever(stateObserver)
@@ -81,14 +84,14 @@ class MyProductsViewModelTest {
 
             val pagingData = mock<PagingData<Product>>()
             val mockPagingData = flowOf(pagingData)
-            whenever(productsrepo.initProductListPaging(any())).thenReturn(mockPagingData)
+            whenever(productsrepo.getProductsPagingDataFlow()).thenReturn(mockPagingData)
 
             val stateObserver = mock<Observer<MyProductsViewState>>()
             viewModel.state.asLiveData().observeForever(stateObserver)
 
             viewModel.bindViewIntents(mockViewIntentFlow)
 
-            verify(productsrepo, times(1)).initProductListPaging(any())
+            verify(productsrepo, times(1)).getProductsPagingDataFlow()
         }
     }
 
